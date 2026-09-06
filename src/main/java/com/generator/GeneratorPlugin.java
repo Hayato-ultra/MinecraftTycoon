@@ -199,6 +199,7 @@ public class GeneratorPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(oneBlockGUI, this);
         getServer().getPluginManager().registerEvents(eventManager, this);
         getServer().getPluginManager().registerEvents(seasonalLeaderboardGUI, this);
+        getServer().getPluginManager().registerEvents(seasonalRewardManager, this);
         getServer().getPluginManager().registerEvents(spawnManager, this);
         getServer().getPluginManager().registerEvents(communityManager, this);
         getServer().getPluginManager().registerEvents(playerShopManager, this);

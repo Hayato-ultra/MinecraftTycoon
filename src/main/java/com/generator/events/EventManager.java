@@ -9,6 +9,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -147,12 +150,16 @@ public class EventManager implements Listener {
                 plugin.getCoinManager().addCoins(winnerPlayer, event.rewardCoins);
                 winnerPlayer.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "You won " + event.name + "! +" + event.rewardCoins + " coins!");
             }
-            Bukkit.broadcastMessage(ChatColor.GOLD + "Event ended! Winner: " + Bukkit.getOfflinePlayer(winner).getName());
+            String winnerName = Bukkit.getOfflinePlayer(winner).getName();
+            if (winnerName == null) winnerName = winner.toString();
+            Bukkit.broadcastMessage(ChatColor.GOLD + "Event ended! Winner: " + winnerName);
         } else {
             Bukkit.broadcastMessage(ChatColor.RED + "Event ended: " + event.name);
         }
 
-        playerProgress.clear();
+        for (Map<String, Integer> playerEventProgress : playerProgress.values()) {
+            playerEventProgress.remove(eventId);
+        }
         saveEvents();
     }
 
@@ -190,9 +197,9 @@ public class EventManager implements Listener {
     }
 
     private void updateProgress(Player player, String eventId, int amount) {
-        Map<String, Integer> progress = playerProgress.computeIfAbsent(player.getUniqueId(), k -> new HashMap<>());
-        int current = progress.getOrDefault(eventId, 0) + amount;
-        progress.put(eventId, current);
+        Map<String, Integer> progress = playerProgress.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentHashMap<>());
+        progress.merge(eventId, amount, Integer::sum);
+        int current = progress.getOrDefault(eventId, 0);
 
         ServerEvent event = activeEvents.get(eventId);
         if (event != null && current % 25 == 0) {
@@ -208,11 +215,16 @@ public class EventManager implements Listener {
 
     public boolean canStartEvent(String type) {
         String cooldownKey = type + "_cooldown";
-        Long lastStart = eventCooldowns.get(cooldownKey);
+        Long[] result = {null};
+        eventCooldowns.compute(cooldownKey, (k, oldVal) -> {
+            result[0] = oldVal;
+            return System.currentTimeMillis();
+        });
+        Long lastStart = result[0];
         if (lastStart != null && (System.currentTimeMillis() - lastStart) < EVENT_COOLDOWN) {
+            eventCooldowns.put(cooldownKey, lastStart);
             return false;
         }
-        eventCooldowns.put(cooldownKey, System.currentTimeMillis());
         return true;
     }
 
@@ -305,6 +317,26 @@ public class EventManager implements Listener {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (inventoryTitles.containsValue(event.getView().getTitle())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (inventoryTitles.containsValue(event.getView().getTitle())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
+        managedInventories.remove(event.getInventory());
+        inventoryTitles.remove(event.getInventory());
     }
 
     public static class ServerEvent {

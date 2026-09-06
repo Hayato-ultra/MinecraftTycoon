@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SeasonManager {
 
@@ -22,7 +23,7 @@ public class SeasonManager {
     private final File seasonFile;
     private final Map<Integer, ServerSeason> seasons = new ConcurrentHashMap<>();
     private final Map<UUID, Map<Integer, SeasonPlayerData>> playerData = new ConcurrentHashMap<>();
-    private ServerSeason currentSeason;
+    private volatile ServerSeason currentSeason;
     private int nextSeasonId = 1;
 
     public SeasonManager(GeneratorPlugin plugin) {
@@ -79,7 +80,7 @@ public class SeasonManager {
     }
 
     private void createDefaultSeasons() {
-        addSeason("Spring Bloom", "spring", 1.2, Arrays.asList("GRASS_BLOCK", "FLOWER pot", "SAPLING"), "New beginnings! 20% bonus to all rewards!");
+        addSeason("Spring Bloom", "spring", 1.2, Arrays.asList("GRASS_BLOCK", "FLOWER_POT", "SAPLING"), "New beginnings! 20% bonus to all rewards!");
         addSeason("Summer Heat", "summer", 1.5, Arrays.asList("SAND", "CACTUS", "MELON"), "Hot summer! 50% bonus to all rewards!");
         addSeason("Autumn Harvest", "autumn", 1.3, Arrays.asList("PUMPKIN", "HAY_BLOCK", "BROWN_MUSHROOM"), "Harvest season! 30% bonus to all rewards!");
         addSeason("Winter Frost", "winter", 2.0, Arrays.asList("SNOW_BLOCK", "ICE", "PACKED_ICE"), "Double rewards all season!");
@@ -150,10 +151,10 @@ public class SeasonManager {
 
                         SeasonPlayerData data = new SeasonPlayerData();
                         data.seasonId = seasonId;
-                        data.xpEarned = cs.getInt("xp-earned", 0);
-                        data.questsCompleted = cs.getInt("quests-completed", 0);
-                        data.blocksBroken = cs.getInt("blocks-broken", 0);
-                        data.mobsKilled = cs.getInt("mobs-killed", 0);
+                        data.xpEarned.set(cs.getInt("xp-earned", 0));
+                        data.questsCompleted.set(cs.getInt("quests-completed", 0));
+                        data.blocksBroken.set(cs.getInt("blocks-broken", 0));
+                        data.mobsKilled.set(cs.getInt("mobs-killed", 0));
                         data.rewardsClaimed = cs.getBoolean("rewards-claimed", false);
 
                         playerData.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>()).put(seasonId, data);
@@ -172,10 +173,10 @@ public class SeasonManager {
             for (Map.Entry<Integer, SeasonPlayerData> dataEntry : entry.getValue().entrySet()) {
                 SeasonPlayerData data = dataEntry.getValue();
                 String path = uuidPath + "." + data.seasonId;
-                config.set(path + ".xp-earned", data.xpEarned);
-                config.set(path + ".quests-completed", data.questsCompleted);
-                config.set(path + ".blocks-broken", data.blocksBroken);
-                config.set(path + ".mobs-killed", data.mobsKilled);
+                config.set(path + ".xp-earned", data.xpEarned.get());
+                config.set(path + ".quests-completed", data.questsCompleted.get());
+                config.set(path + ".blocks-broken", data.blocksBroken.get());
+                config.set(path + ".mobs-killed", data.mobsKilled.get());
                 config.set(path + ".rewards-claimed", data.rewardsClaimed);
             }
         }
@@ -222,7 +223,7 @@ public class SeasonManager {
         SeasonPlayerData data = playerData.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>())
                 .computeIfAbsent(currentSeason.id, k -> new SeasonPlayerData());
         data.seasonId = currentSeason.id;
-        data.xpEarned += amount;
+        data.xpEarned.addAndGet(amount);
     }
 
     public void addBlockBroken(UUID uuid) {
@@ -230,7 +231,7 @@ public class SeasonManager {
 
         SeasonPlayerData data = playerData.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>())
                 .computeIfAbsent(currentSeason.id, k -> new SeasonPlayerData());
-        data.blocksBroken++;
+        data.blocksBroken.incrementAndGet();
         addXP(uuid, 1);
     }
 
@@ -239,7 +240,7 @@ public class SeasonManager {
 
         SeasonPlayerData data = playerData.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>())
                 .computeIfAbsent(currentSeason.id, k -> new SeasonPlayerData());
-        data.mobsKilled++;
+        data.mobsKilled.incrementAndGet();
         addXP(uuid, 5);
     }
 
@@ -248,7 +249,7 @@ public class SeasonManager {
 
         SeasonPlayerData data = playerData.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>())
                 .computeIfAbsent(currentSeason.id, k -> new SeasonPlayerData());
-        data.questsCompleted++;
+        data.questsCompleted.incrementAndGet();
         addXP(uuid, currentSeason.questBonus);
     }
 
@@ -301,7 +302,7 @@ public class SeasonManager {
         return playerData.values().stream()
                 .filter(data -> data.containsKey(seasonId))
                 .map(data -> data.get(seasonId))
-                .sorted(Comparator.comparingInt((SeasonPlayerData d) -> d.xpEarned).reversed())
+                .sorted(Comparator.comparingInt((SeasonPlayerData d) -> d.xpEarned.get()).reversed())
                 .toList();
     }
 
@@ -335,10 +336,10 @@ public class SeasonManager {
         gui.setItem(22, createItem(Material.EXPERIENCE_BOTTLE,
                 ChatColor.AQUA + "Your Season Stats",
                 "",
-                "§7XP Earned: §f" + data.xpEarned,
-                "§7Quests Completed: §f" + data.questsCompleted,
-                "§7Blocks Broken: §f" + data.blocksBroken,
-                "§7Mobs Killed: §f" + data.mobsKilled,
+                "§7XP Earned: §f" + data.getXpEarned(),
+                "§7Quests Completed: §f" + data.getQuestsCompleted(),
+                "§7Blocks Broken: §f" + data.getBlocksBroken(),
+                "§7Mobs Killed: §f" + data.getMobsKilled(),
                 "§7Rewards Claimed: " + (data.rewardsClaimed ? "§aYes" : "§cNo")));
 
         gui.setItem(26, createItem(Material.BARRIER, ChatColor.RED + "Close"));
@@ -373,10 +374,15 @@ public class SeasonManager {
 
     public static class SeasonPlayerData {
         public int seasonId;
-        public int xpEarned = 0;
-        public int questsCompleted = 0;
-        public int blocksBroken = 0;
-        public int mobsKilled = 0;
-        public boolean rewardsClaimed = false;
+        public AtomicInteger xpEarned = new AtomicInteger(0);
+        public AtomicInteger questsCompleted = new AtomicInteger(0);
+        public AtomicInteger blocksBroken = new AtomicInteger(0);
+        public AtomicInteger mobsKilled = new AtomicInteger(0);
+        public volatile boolean rewardsClaimed = false;
+
+        public int getXpEarned() { return xpEarned.get(); }
+        public int getQuestsCompleted() { return questsCompleted.get(); }
+        public int getBlocksBroken() { return blocksBroken.get(); }
+        public int getMobsKilled() { return mobsKilled.get(); }
     }
 }

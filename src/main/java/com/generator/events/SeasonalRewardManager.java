@@ -3,15 +3,21 @@ package com.generator.events;
 import com.generator.GeneratorPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
 
-public class SeasonalRewardManager {
+public class SeasonalRewardManager implements Listener {
 
     private final GeneratorPlugin plugin;
     private final SeasonManager seasonManager;
@@ -43,7 +49,10 @@ public class SeasonalRewardManager {
         plugin.getCoinManager().addCoins(player, reward.coins);
 
         for (ItemStack item : reward.items) {
-            player.getInventory().addItem(item);
+            HashMap<Integer, ItemStack> overflow = player.getInventory().addItem(item);
+            for (ItemStack leftover : overflow.values()) {
+                player.getWorld().dropItemNaturally(player.getLocation(), leftover);
+            }
         }
 
         player.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "SEASON REWARDS CLAIMED!");
@@ -53,11 +62,12 @@ public class SeasonalRewardManager {
     }
 
     private int getRewardTier(SeasonManager.SeasonPlayerData data) {
-        if (data.xpEarned >= 5000) return 5;
-        if (data.xpEarned >= 2500) return 4;
-        if (data.xpEarned >= 1000) return 3;
-        if (data.xpEarned >= 500) return 2;
-        if (data.xpEarned >= 100) return 1;
+        int xp = data.getXpEarned();
+        if (xp >= 5000) return 5;
+        if (xp >= 2500) return 4;
+        if (xp >= 1000) return 3;
+        if (xp >= 500) return 2;
+        if (xp >= 100) return 1;
         return 0;
     }
 
@@ -112,6 +122,11 @@ public class SeasonalRewardManager {
                         new ItemStack(Material.TOTEM_OF_UNDYING, 1)
                 );
             }
+            default -> {
+                reward.tierName = "Unknown";
+                reward.coins = 0;
+                reward.items = new ArrayList<>();
+            }
         }
         return reward;
     }
@@ -127,7 +142,7 @@ public class SeasonalRewardManager {
         gui.setItem(4, createItem(Material.NETHER_STAR,
                 ChatColor.GOLD + "Season Rewards",
                 "",
-                "§7Your XP: §f" + data.xpEarned,
+                "§7Your XP: §f" + data.getXpEarned(),
                 "§7Your Tier: §f" + (tier == 0 ? "None" : getTierName(tier)),
                 "",
                 "§7Tier 1 (100 XP): 100 coins",
@@ -191,6 +206,26 @@ public class SeasonalRewardManager {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (inventoryTitles.containsValue(event.getView().getTitle())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (inventoryTitles.containsValue(event.getView().getTitle())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
+        managedInventories.remove(event.getInventory());
+        inventoryTitles.remove(event.getInventory());
     }
 
     public static class SeasonReward {

@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SeasonalQuestManager {
 
@@ -106,7 +107,7 @@ public class SeasonalQuestManager {
 
                     QuestProgress progress = new QuestProgress();
                     progress.questId = questId;
-                    progress.currentAmount = cs.getInt("current-amount", 0);
+                    progress.currentAmount.set(cs.getInt("current-amount", 0));
                     progress.completed = cs.getBoolean("completed", false);
                     progress.claimed = cs.getBoolean("claimed", false);
 
@@ -124,7 +125,7 @@ public class SeasonalQuestManager {
             String uuidPath = "progress." + entry.getKey().toString();
             for (Map.Entry<String, QuestProgress> questEntry : entry.getValue().entrySet()) {
                 QuestProgress progress = questEntry.getValue();
-                config.set(uuidPath + "." + progress.questId + ".current-amount", progress.currentAmount);
+                config.set(uuidPath + "." + progress.questId + ".current-amount", progress.currentAmount.get());
                 config.set(uuidPath + "." + progress.questId + ".completed", progress.completed);
                 config.set(uuidPath + "." + progress.questId + ".claimed", progress.claimed);
             }
@@ -199,15 +200,16 @@ public class SeasonalQuestManager {
 
         if (progress.completed) return;
 
-        progress.currentAmount += amount;
+        progress.currentAmount.addAndGet(amount);
         seasonManager.addXP(player.getUniqueId(), amount);
 
-        if (progress.currentAmount >= quest.requiredAmount) {
+        int current = progress.currentAmount.get();
+        if (current >= quest.requiredAmount) {
             progress.completed = true;
             player.sendMessage(ChatColor.GOLD + "Quest completed: " + quest.name + "!");
             player.sendMessage(ChatColor.YELLOW + "Reward: " + quest.rewardCoins + " coins, " + quest.rewardXP + " XP");
-        } else if (progress.currentAmount % (quest.requiredAmount / 4) == 0) {
-            int percent = (int) ((double) progress.currentAmount / quest.requiredAmount * 100);
+        } else if (quest.requiredAmount >= 4 && current % (quest.requiredAmount / 4) == 0) {
+            int percent = (int) ((double) current / quest.requiredAmount * 100);
             player.sendMessage(ChatColor.AQUA + quest.name + " progress: " + percent + "%");
         }
     }
@@ -244,7 +246,7 @@ public class SeasonalQuestManager {
         for (SeasonalQuest quest : quests) {
             if (slot >= 26) break;
             QuestProgress progress = getPlayerProgress(player.getUniqueId(), quest.id);
-            int current = progress != null ? progress.currentAmount : 0;
+            int current = progress != null ? progress.getCurrentAmount() : 0;
             boolean completed = progress != null && progress.completed;
             boolean claimed = progress != null && progress.claimed;
 
@@ -305,8 +307,10 @@ public class SeasonalQuestManager {
 
     public static class QuestProgress {
         public String questId;
-        public int currentAmount = 0;
-        public boolean completed = false;
-        public boolean claimed = false;
+        public AtomicInteger currentAmount = new AtomicInteger(0);
+        public volatile boolean completed = false;
+        public volatile boolean claimed = false;
+
+        public int getCurrentAmount() { return currentAmount.get(); }
     }
 }

@@ -8,6 +8,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -55,10 +57,10 @@ public class SeasonalLeaderboardGUI implements Listener {
 
                 List<String> lore = new ArrayList<>();
                 lore.add("");
-                lore.add("§7XP Earned: §f" + data.xpEarned);
-                lore.add("§7Quests Completed: §f" + data.questsCompleted);
-                lore.add("§7Blocks Broken: §f" + data.blocksBroken);
-                lore.add("§7Mobs Killed: §f" + data.mobsKilled);
+                lore.add("§7XP Earned: §f" + data.getXpEarned());
+                lore.add("§7Quests Completed: §f" + data.getQuestsCompleted());
+                lore.add("§7Blocks Broken: §f" + data.getBlocksBroken());
+                lore.add("§7Mobs Killed: §f" + data.getMobsKilled());
                 lore.add("");
                 lore.add("§7Status: " + (data.rewardsClaimed ? "§aRewards Claimed" : "§eRewards Available"));
 
@@ -106,10 +108,10 @@ public class SeasonalLeaderboardGUI implements Listener {
             gui.setItem(13, createItem(Material.EXPERIENCE_BOTTLE,
                     ChatColor.AQUA + "Your Season Progress",
                     "",
-                    "§7XP Earned: §f" + data.xpEarned,
-                    "§7Quests Completed: §f" + data.questsCompleted,
-                    "§7Blocks Broken: §f" + data.blocksBroken,
-                    "§7Mobs Killed: §f" + data.mobsKilled,
+                    "§7XP Earned: §f" + data.getXpEarned(),
+                    "§7Quests Completed: §f" + data.getQuestsCompleted(),
+                    "§7Blocks Broken: §f" + data.getBlocksBroken(),
+                    "§7Mobs Killed: §f" + data.getMobsKilled(),
                     "",
                     data.rewardsClaimed ? "§aRewards Claimed" : "§eRewards Available"));
         } else {
@@ -142,6 +144,19 @@ public class SeasonalLeaderboardGUI implements Listener {
         } else if (title.equals("SEASON_INFO")) {
             if (slot == 22) player.closeInventory();
         }
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (inventoryTitles.containsValue(event.getView().getTitle())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
+        managedInventories.remove(event.getInventory());
+        inventoryTitles.remove(event.getInventory());
     }
 
     private ItemStack createItem(Material material, String name, String... lore) {
