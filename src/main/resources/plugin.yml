@@ -99,6 +99,10 @@ commands:
     description: Prestige system commands
     usage: /prestige
     permission: generators.use
+  oneblock:
+    description: OneBlock commands
+    usage: /oneblock [info|phases|quests|events|leaderboard|reset]
+    permission: generators.use
 
 permissions:
   generators.use:

@@ -25,6 +25,10 @@ import com.generator.pvp.ArenaManager;
 import com.generator.warp.WarpManager;
 import com.generator.prestige.PrestigeManager;
 import com.generator.prestige.PrestigeGUI;
+import com.generator.oneblock.OneBlockManager;
+import com.generator.oneblock.OneBlockQuestManager;
+import com.generator.oneblock.OneBlockEventManager;
+import com.generator.oneblock.OneBlockGUI;
 import com.generator.storage.DatabaseManager;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.Command;
@@ -55,6 +59,10 @@ public class GeneratorPlugin extends JavaPlugin {
     private WarpManager warpManager;
     private PrestigeManager prestigeManager;
     private PrestigeGUI prestigeGUI;
+    private OneBlockManager oneBlockManager;
+    private OneBlockQuestManager oneBlockQuestManager;
+    private OneBlockEventManager oneBlockEventManager;
+    private OneBlockGUI oneBlockGUI;
 
     @Override
     public void onEnable() {
@@ -107,6 +115,11 @@ public class GeneratorPlugin extends JavaPlugin {
         prestigeManager = new PrestigeManager(this);
         prestigeGUI = new PrestigeGUI(this);
 
+        oneBlockManager = new OneBlockManager(this);
+        oneBlockQuestManager = new OneBlockQuestManager(this, oneBlockManager);
+        oneBlockEventManager = new OneBlockEventManager(this, oneBlockManager);
+        oneBlockGUI = new OneBlockGUI(this, oneBlockManager, oneBlockQuestManager, oneBlockEventManager);
+
         getServer().getPluginManager().registerEvents(new GeneratorListener(this), this);
         getServer().getPluginManager().registerEvents(guiManager, this);
         getServer().getPluginManager().registerEvents(menuManager, this);
@@ -125,6 +138,10 @@ public class GeneratorPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(arenaManager, this);
         getServer().getPluginManager().registerEvents(warpManager, this);
         getServer().getPluginManager().registerEvents(prestigeGUI, this);
+        getServer().getPluginManager().registerEvents(oneBlockManager, this);
+        getServer().getPluginManager().registerEvents(oneBlockQuestManager, this);
+        getServer().getPluginManager().registerEvents(oneBlockEventManager, this);
+        getServer().getPluginManager().registerEvents(oneBlockGUI, this);
 
         getCommand("generator").setExecutor(new GeneratorCommand(this));
         getCommand("generatorshop").setExecutor(new GeneratorCommand(this));
@@ -520,6 +537,47 @@ public class GeneratorPlugin extends JavaPlugin {
             return true;
         });
 
+        getCommand("oneblock").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    oneBlockGUI.openMainMenu(player);
+                    return true;
+                }
+                String sub = args[0].toLowerCase();
+                switch (sub) {
+                    case "info" -> {
+                        OneBlockManager.OneBlockProgress progress = oneBlockManager.getProgress(player.getUniqueId());
+                        String currentPhase = oneBlockManager.getCurrentPhaseName(player.getUniqueId());
+                        int phaseProgress = oneBlockManager.getPhaseProgress(player.getUniqueId());
+                        player.sendMessage(org.bukkit.ChatColor.GREEN + "=== ONEBLOCK INFO ===");
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "Current Phase: " + currentPhase);
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "Phase Progress: " + phaseProgress + "%");
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "Total Blocks: " + progress.totalBroken);
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "Phases Completed: " + progress.phasesCompleted);
+                    }
+                    case "phases" -> oneBlockGUI.openPhasesMenu(player);
+                    case "quests" -> oneBlockGUI.openQuestsMenu(player);
+                    case "events" -> oneBlockGUI.openEventsMenu(player);
+                    case "leaderboard" -> oneBlockGUI.openLeaderboardMenu(player);
+                    case "reset" -> {
+                        if (sender.hasPermission("generators.admin")) {
+                            if (args.length >= 2) {
+                                org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(args[1]);
+                                if (target != null) {
+                                    oneBlockManager.resetPlayer(target.getUniqueId());
+                                    player.sendMessage(org.bukkit.ChatColor.GREEN + "Reset OneBlock progress for " + target.getName());
+                                } else {
+                                    player.sendMessage(org.bukkit.ChatColor.RED + "Player not found!");
+                                }
+                            }
+                        }
+                    }
+                    default -> oneBlockGUI.openMainMenu(player);
+                }
+            }
+            return true;
+        });
+
         getServer().getScheduler().runTaskLater(this, () -> {
             generatorManager.loadAll();
             generatorManager.enable();
@@ -554,6 +612,14 @@ public class GeneratorPlugin extends JavaPlugin {
         }
         if (prestigeManager != null) {
             prestigeManager.save();
+        }
+        if (oneBlockManager != null) {
+            oneBlockManager.savePhases();
+            oneBlockManager.saveProgress();
+        }
+        if (oneBlockQuestManager != null) {
+            oneBlockQuestManager.saveQuests();
+            oneBlockQuestManager.saveCompletedQuests();
         }
         if (databaseManager != null) {
             databaseManager.disconnect();
@@ -651,5 +717,21 @@ public class GeneratorPlugin extends JavaPlugin {
 
     public PrestigeGUI getPrestigeGUI() {
         return prestigeGUI;
+    }
+
+    public OneBlockManager getOneBlockManager() {
+        return oneBlockManager;
+    }
+
+    public OneBlockQuestManager getOneBlockQuestManager() {
+        return oneBlockQuestManager;
+    }
+
+    public OneBlockEventManager getOneBlockEventManager() {
+        return oneBlockEventManager;
+    }
+
+    public OneBlockGUI getOneBlockGUI() {
+        return oneBlockGUI;
     }
 }
