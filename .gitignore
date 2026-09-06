@@ -1,0 +1,21 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Server (don't upload server files)
+../server/
+
+# Build output
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar

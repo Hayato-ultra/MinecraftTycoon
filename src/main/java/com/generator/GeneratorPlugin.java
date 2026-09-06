@@ -1,0 +1,655 @@
+package com.generator;
+
+import com.generator.commands.AdminCommand;
+import com.generator.commands.GeneratorCommand;
+import com.generator.config.ConfigManager;
+import com.generator.economy.EconomyHook;
+import com.generator.economy.CoinManager;
+import com.generator.generator.GeneratorManager;
+import com.generator.gui.GUIManager;
+import com.generator.gui.MenuManager;
+import com.generator.gui.ProfileGUI;
+import com.generator.gui.TeleportItem;
+import com.generator.gui.AdminDashboard;
+import com.generator.level.LevelManager;
+import com.generator.reports.ReportManager;
+import com.generator.profile.ProfileManager;
+import com.generator.listeners.ProfileListener;
+import com.generator.listeners.GeneratorListener;
+import com.generator.shop.ShopManager;
+import com.generator.shop.KitManager;
+import com.generator.shop.TradeManager;
+import com.generator.grief.AntiGriefManager;
+import com.generator.grief.ClaimManager;
+import com.generator.pvp.ArenaManager;
+import com.generator.warp.WarpManager;
+import com.generator.prestige.PrestigeManager;
+import com.generator.prestige.PrestigeGUI;
+import com.generator.storage.DatabaseManager;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.Command;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class GeneratorPlugin extends JavaPlugin {
+
+    private static GeneratorPlugin instance;
+    private ConfigManager configManager;
+    private DatabaseManager databaseManager;
+    private GeneratorManager generatorManager;
+    private EconomyHook economyHook;
+    private GUIManager guiManager;
+    private MenuManager menuManager;
+    private ProfileManager profileManager;
+    private ProfileGUI profileGUI;
+    private TeleportItem teleportItem;
+    private CoinManager coinManager;
+    private LevelManager levelManager;
+    private AdminDashboard adminDashboard;
+    private ReportManager reportManager;
+    private ShopManager shopManager;
+    private KitManager kitManager;
+    private TradeManager tradeManager;
+    private AntiGriefManager antiGriefManager;
+    private ClaimManager claimManager;
+    private ArenaManager arenaManager;
+    private WarpManager warpManager;
+    private PrestigeManager prestigeManager;
+    private PrestigeGUI prestigeGUI;
+
+    @Override
+    public void onEnable() {
+        instance = this;
+
+        saveDefaultConfig();
+
+        configManager = new ConfigManager(getConfig());
+
+        databaseManager = new DatabaseManager(this);
+        databaseManager.connect();
+
+        generatorManager = new GeneratorManager(this);
+
+        economyHook = new EconomyHook(this);
+        economyHook.setup();
+
+        guiManager = new GUIManager(this);
+
+        menuManager = new MenuManager(this);
+
+        profileManager = new ProfileManager(this);
+
+        profileGUI = new ProfileGUI(this);
+
+        teleportItem = new TeleportItem(this);
+
+        coinManager = new CoinManager(this);
+
+        levelManager = new LevelManager(this);
+
+        adminDashboard = new AdminDashboard(this);
+
+        reportManager = new ReportManager(this);
+
+        shopManager = new ShopManager(this);
+
+        kitManager = new KitManager(this);
+
+        tradeManager = new TradeManager(this);
+
+        antiGriefManager = new AntiGriefManager(this);
+
+        claimManager = new ClaimManager(this);
+
+        arenaManager = new ArenaManager(this);
+
+        warpManager = new WarpManager(this);
+
+        prestigeManager = new PrestigeManager(this);
+        prestigeGUI = new PrestigeGUI(this);
+
+        getServer().getPluginManager().registerEvents(new GeneratorListener(this), this);
+        getServer().getPluginManager().registerEvents(guiManager, this);
+        getServer().getPluginManager().registerEvents(menuManager, this);
+        getServer().getPluginManager().registerEvents(new ProfileListener(this), this);
+        getServer().getPluginManager().registerEvents(profileGUI, this);
+        getServer().getPluginManager().registerEvents(teleportItem, this);
+        getServer().getPluginManager().registerEvents(coinManager, this);
+        getServer().getPluginManager().registerEvents(levelManager, this);
+        getServer().getPluginManager().registerEvents(adminDashboard, this);
+        getServer().getPluginManager().registerEvents(reportManager, this);
+        getServer().getPluginManager().registerEvents(shopManager, this);
+        getServer().getPluginManager().registerEvents(kitManager, this);
+        getServer().getPluginManager().registerEvents(tradeManager, this);
+        getServer().getPluginManager().registerEvents(antiGriefManager, this);
+        getServer().getPluginManager().registerEvents(claimManager, this);
+        getServer().getPluginManager().registerEvents(arenaManager, this);
+        getServer().getPluginManager().registerEvents(warpManager, this);
+        getServer().getPluginManager().registerEvents(prestigeGUI, this);
+
+        getCommand("generator").setExecutor(new GeneratorCommand(this));
+        getCommand("generatorshop").setExecutor(new GeneratorCommand(this));
+        getCommand("generatoradmin").setExecutor(new AdminCommand(this));
+        getCommand("generatoradmin").setTabCompleter((CommandSender sender, Command command, String alias, String[] args) -> {
+            if (args.length == 1) {
+                return java.util.List.of("give", "giveall", "reload", "setlevel", "inspect", "remove", "givecoins", "givexp");
+            }
+            return java.util.Collections.emptyList();
+        });
+
+        getCommand("menu").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                menuManager.openMainMenu(player);
+            }
+            return true;
+        });
+
+        getCommand("mode").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                menuManager.openModeSelector(player);
+            }
+            return true;
+        });
+
+        getCommand("profile").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                profileGUI.openProfile(player);
+            }
+            return true;
+        });
+
+        getCommand("sell").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                coinManager.sellInventory(player);
+            }
+            return true;
+        });
+
+        getCommand("daily").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                coinManager.claimDaily(player);
+            }
+            return true;
+        });
+
+        getCommand("coins").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                int coins = coinManager.getCoins(player);
+                player.sendMessage(org.bukkit.ChatColor.GOLD + "Your balance: " + coins + " coins");
+            }
+            return true;
+        });
+
+        getCommand("admin").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                adminDashboard.openDashboard(player);
+            }
+            return true;
+        });
+
+        getCommand("report").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                reportManager.openReportPlayerGUI(player);
+            }
+            return true;
+        });
+
+        getCommand("reports").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                reportManager.openReportGUI(player);
+            }
+            return true;
+        });
+
+        getCommand("shop").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                shopManager.openShop(player);
+            }
+            return true;
+        });
+
+        getCommand("kit").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                kitManager.openKitGUI(player);
+            }
+            return true;
+        });
+
+        getCommand("trade").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    player.sendMessage(org.bukkit.ChatColor.YELLOW + "Usage: /trade <player> | /trade accept | /trade decline");
+                    return true;
+                }
+                String sub = args[0].toLowerCase();
+                if (sub.equals("accept")) {
+                    tradeManager.acceptTrade(player);
+                } else if (sub.equals("decline")) {
+                    tradeManager.declineTrade(player);
+                } else {
+                    org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(args[0]);
+                    if (target == null) {
+                        player.sendMessage(org.bukkit.ChatColor.RED + "Player not found!");
+                        return true;
+                    }
+                    tradeManager.sendTradeRequest(player, target);
+                }
+            }
+            return true;
+        });
+
+        getCommand("claim").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    claimManager.openClaimGUI(player);
+                    return true;
+                }
+                String sub = args[0].toLowerCase();
+                switch (sub) {
+                    case "create" -> {
+                        claimManager.enterClaimMode(player);
+                        player.closeInventory();
+                    }
+                    case "remove" -> {
+                        if (args.length < 2) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /claim remove <name>");
+                            return true;
+                        }
+                        String name = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length));
+                        if (claimManager.removeClaim(player.getUniqueId(), name)) {
+                            player.sendMessage(org.bukkit.ChatColor.GREEN + "Claim removed!");
+                        } else {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Claim not found!");
+                        }
+                    }
+                    case "list" -> {
+                        java.util.List<com.generator.grief.ClaimManager.Claim> claims = claimManager.getPlayerClaims(player.getUniqueId());
+                        if (claims.isEmpty()) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "You have no claims!");
+                        } else {
+                            player.sendMessage(org.bukkit.ChatColor.GREEN + "=== YOUR CLAIMS ===");
+                            for (com.generator.grief.ClaimManager.Claim claim : claims) {
+                                player.sendMessage(org.bukkit.ChatColor.YELLOW + claim.name + ": " +
+                                        "(" + claim.min.getBlockX() + "," + claim.min.getBlockY() + "," + claim.min.getBlockZ() + ") - " +
+                                        "(" + claim.max.getBlockX() + "," + claim.max.getBlockY() + "," + claim.max.getBlockZ() + ")");
+                            }
+                        }
+                    }
+                    case "trust" -> {
+                        if (args.length < 3) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /claim trust <player> <claim>");
+                            return true;
+                        }
+                        org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(args[1]);
+                        if (target == null) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Player not found!");
+                            return true;
+                        }
+                        String claimName = String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length));
+                        if (claimManager.trustPlayer(player.getUniqueId(), target.getUniqueId(), claimName)) {
+                            player.sendMessage(org.bukkit.ChatColor.GREEN + target.getName() + " trusted in " + claimName + "!");
+                        } else {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Claim not found!");
+                        }
+                    }
+                    case "untrust" -> {
+                        if (args.length < 3) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /claim untrust <player> <claim>");
+                            return true;
+                        }
+                        org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(args[1]);
+                        if (target == null) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Player not found!");
+                            return true;
+                        }
+                        String claimName = String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length));
+                        if (claimManager.untrustPlayer(player.getUniqueId(), target.getUniqueId(), claimName)) {
+                            player.sendMessage(org.bukkit.ChatColor.GREEN + target.getName() + " untrusted from " + claimName + "!");
+                        } else {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Claim not found!");
+                        }
+                    }
+                    case "cancel" -> {
+                        claimManager.exitClaimMode(player);
+                    }
+                    case "info" -> {
+                        com.generator.grief.ClaimManager.Claim claim = claimManager.getClaimAt(player.getLocation());
+                        if (claim == null) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "You are not in a claim!");
+                        } else {
+                            player.sendMessage(org.bukkit.ChatColor.GREEN + "Claim: " + claim.name);
+                            player.sendMessage(org.bukkit.ChatColor.YELLOW + "Owner: " + org.bukkit.Bukkit.getOfflinePlayer(claim.owner).getName());
+                            player.sendMessage(org.bukkit.ChatColor.YELLOW + "Trusted: " + claim.trusted.size() + " players");
+                        }
+                    }
+                    default -> player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /claim [create|remove|list|trust|untrust|info|cancel]");
+                }
+            }
+            return true;
+        });
+
+        getCommand("claim").setTabCompleter(claimManager);
+
+        getCommand("antigrief").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                antiGriefManager.toggleAntiGrief(player);
+            }
+            return true;
+        });
+
+        getCommand("pvp").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    arenaManager.openArenaGUI(player);
+                    return true;
+                }
+                String sub = args[0].toLowerCase();
+                switch (sub) {
+                    case "join" -> {
+                        if (args.length < 2) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /pvp join <arena>");
+                            return true;
+                        }
+                        arenaManager.joinArena(player, args[1]);
+                    }
+                    case "leave" -> {
+                        arenaManager.leaveArena(player);
+                    }
+                    case "leaderboard", "lb" -> {
+                        arenaManager.openLeaderboardGUI(player);
+                    }
+                    case "list" -> {
+                        player.sendMessage(org.bukkit.ChatColor.GREEN + "=== ARENAS ===");
+                        for (com.generator.pvp.ArenaManager.Arena arena : arenaManager.getArenas()) {
+                            player.sendMessage(org.bukkit.ChatColor.YELLOW + arena.displayName +
+                                    " §7(" + arena.type + ") §f- " + (arena.enabled ? "§aEnabled" : "§cDisabled"));
+                        }
+                    }
+                    default -> player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /pvp [join|leave|leaderboard|list]");
+                }
+            }
+            return true;
+        });
+
+        getCommand("pvp").setTabCompleter((sender, command, alias, args) -> {
+            if (args.length == 1) {
+                return java.util.List.of("join", "leave", "leaderboard", "list");
+            }
+            if (args.length == 2 && args[0].equalsIgnoreCase("join")) {
+                return arenaManager.getArenas().stream()
+                        .map(a -> a.name)
+                        .filter(n -> n.toLowerCase().startsWith(args[1].toLowerCase()))
+                        .toList();
+            }
+            return java.util.Collections.emptyList();
+        });
+
+        getCommand("warp").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    warpManager.openWarpGUI(player);
+                    return true;
+                }
+                String sub = args[0].toLowerCase();
+                switch (sub) {
+                    case "set" -> {
+                        if (args.length < 2) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /warp set <name> [cost]");
+                            return true;
+                        }
+                        int cost;
+                        try {
+                            cost = args.length >= 3 ? Integer.parseInt(args[2]) : 100;
+                        } catch (NumberFormatException e) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Invalid cost number!");
+                            return true;
+                        }
+                        if (cost < 0) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Cost must be 0 or more!");
+                            return true;
+                        }
+                        warpManager.setWarp(player, args[1], cost);
+                    }
+                    case "delete", "del" -> {
+                        if (args.length < 2) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /warp delete <name>");
+                            return true;
+                        }
+                        if (warpManager.deleteWarp(args[1])) {
+                            player.sendMessage(org.bukkit.ChatColor.GREEN + "Warp deleted!");
+                        } else {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Warp not found!");
+                        }
+                    }
+                    case "list" -> {
+                        player.sendMessage(org.bukkit.ChatColor.GREEN + "=== WARPS ===");
+                        for (java.util.Map.Entry<String, com.generator.warp.WarpManager.Warp> entry : warpManager.getWarps().entrySet()) {
+                            com.generator.warp.WarpManager.Warp warp = entry.getValue();
+                            player.sendMessage(org.bukkit.ChatColor.YELLOW + warp.displayName +
+                                    " §7(Cost: §6" + warp.cost + " §7coins)");
+                        }
+                    }
+                    default -> {
+                        warpManager.teleportWarp(player, sub);
+                    }
+                }
+            }
+            return true;
+        });
+
+        getCommand("home").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    warpManager.openHomesGUI(player);
+                    return true;
+                }
+                String sub = args[0].toLowerCase();
+                switch (sub) {
+                    case "set" -> {
+                        String name = args.length >= 2 ? args[1] : "home";
+                        warpManager.setHome(player, name);
+                    }
+                    case "delete", "del" -> {
+                        if (args.length < 2) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /home delete <name>");
+                            return true;
+                        }
+                        warpManager.deleteHome(player, args[1]);
+                    }
+                    case "list" -> {
+                        java.util.List<com.generator.warp.WarpManager.Home> homes = warpManager.getHomes(player.getUniqueId());
+                        if (homes.isEmpty()) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "You have no homes!");
+                        } else {
+                            player.sendMessage(org.bukkit.ChatColor.GREEN + "=== YOUR HOMES ===");
+                            for (com.generator.warp.WarpManager.Home home : homes) {
+                                player.sendMessage(org.bukkit.ChatColor.YELLOW + home.name + " §7(" + home.world + ")");
+                            }
+                        }
+                    }
+                    default -> {
+                        warpManager.teleportHome(player, sub);
+                    }
+                }
+            }
+            return true;
+        });
+
+        getCommand("tpa").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    warpManager.openTPAGUI(player);
+                    return true;
+                }
+                String sub = args[0].toLowerCase();
+                switch (sub) {
+                    case "accept" -> warpManager.acceptTPA(player);
+                    case "deny" -> warpManager.denyTPA(player);
+                    default -> {
+                        org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(args[0]);
+                        if (target == null) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Player not found!");
+                            return true;
+                        }
+                        warpManager.sendTPA(player, target);
+                    }
+                }
+            }
+            return true;
+        });
+
+        getCommand("tpahere").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /tpahere <player>");
+                    return true;
+                }
+                org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(args[0]);
+                if (target == null) {
+                    player.sendMessage(org.bukkit.ChatColor.RED + "Player not found!");
+                    return true;
+                }
+                warpManager.sendTPAHere(player, target);
+            }
+            return true;
+        });
+
+        getCommand("prestige").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                prestigeGUI.openPrestigeMain(player);
+            }
+            return true;
+        });
+
+        getServer().getScheduler().runTaskLater(this, () -> {
+            generatorManager.loadAll();
+            generatorManager.enable();
+        }, 10L);
+
+        getLogger().info("GeneratorPlugin enabled! Loaded " + configManager.getGeneratorTypes().size() + " generator types.");
+    }
+
+    @Override
+    public void onDisable() {
+        instance = null;
+        if (generatorManager != null) {
+            generatorManager.saveAll();
+            generatorManager.disable();
+        }
+        if (profileManager != null) {
+            profileManager.saveAll();
+        }
+        if (reportManager != null) {
+            reportManager.saveReports();
+        }
+        if (arenaManager != null) {
+            arenaManager.saveArenas();
+            arenaManager.saveStats();
+        }
+        if (warpManager != null) {
+            warpManager.saveWarps();
+            warpManager.saveHomes();
+        }
+        if (claimManager != null) {
+            claimManager.saveClaims();
+        }
+        if (prestigeManager != null) {
+            prestigeManager.save();
+        }
+        if (databaseManager != null) {
+            databaseManager.disconnect();
+        }
+        getLogger().info("GeneratorPlugin disabled!");
+    }
+
+    public static GeneratorPlugin getInstance() {
+        return instance;
+    }
+
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
+
+    public GeneratorManager getGeneratorManager() {
+        return generatorManager;
+    }
+
+    public EconomyHook getEconomyHook() {
+        return economyHook;
+    }
+
+    public GUIManager getGUIManager() {
+        return guiManager;
+    }
+
+    public MenuManager getMenuManager() {
+        return menuManager;
+    }
+
+    public ProfileManager getProfileManager() {
+        return profileManager;
+    }
+
+    public ProfileGUI getProfileGUI() {
+        return profileGUI;
+    }
+
+    public TeleportItem getTeleportItem() {
+        return teleportItem;
+    }
+
+    public CoinManager getCoinManager() {
+        return coinManager;
+    }
+
+    public LevelManager getLevelManager() {
+        return levelManager;
+    }
+
+    public AdminDashboard getAdminDashboard() {
+        return adminDashboard;
+    }
+
+    public ReportManager getReportManager() {
+        return reportManager;
+    }
+
+    public ShopManager getShopManager() {
+        return shopManager;
+    }
+
+    public KitManager getKitManager() {
+        return kitManager;
+    }
+
+    public TradeManager getTradeManager() {
+        return tradeManager;
+    }
+
+    public AntiGriefManager getAntiGriefManager() {
+        return antiGriefManager;
+    }
+
+    public ClaimManager getClaimManager() {
+        return claimManager;
+    }
+
+    public ArenaManager getArenaManager() {
+        return arenaManager;
+    }
+
+    public WarpManager getWarpManager() {
+        return warpManager;
+    }
+
+    public PrestigeManager getPrestigeManager() {
+        return prestigeManager;
+    }
+
+    public PrestigeGUI getPrestigeGUI() {
+        return prestigeGUI;
+    }
+}

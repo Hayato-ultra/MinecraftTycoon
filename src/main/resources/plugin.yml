@@ -1,0 +1,133 @@
+name: GeneratorPlugin
+version: 1.0.0
+main: com.generator.GeneratorPlugin
+api-version: '1.21'
+softdepend: [BentoBox, Vault]
+description: Configuration-driven resource generators for SkyBlock
+author: ROHIT
+
+commands:
+  generator:
+    description: Open generator menu
+    usage: /generator [shop|list|help]
+    permission: generators.use
+  generatorshop:
+    description: Open the generator shop
+    usage: /generatorshop
+    permission: generators.use
+  generatoradmin:
+    description: Admin commands for generators
+    usage: /generatoradmin <give|giveall|reload|setlevel|inspect|remove>
+    permission: generators.admin
+  menu:
+    description: Open the server menu
+    usage: /menu
+    permission: generators.use
+  mode:
+    description: Open the mode selector
+    usage: /mode
+    permission: generators.use
+  profile:
+    description: View your player profile
+    usage: /profile
+    permission: generators.use
+  sell:
+    description: Sell items in your inventory
+    usage: /sell
+    permission: generators.use
+  daily:
+    description: Claim daily reward
+    usage: /daily
+    permission: generators.use
+  coins:
+    description: Check your coin balance
+    usage: /coins
+    permission: generators.use
+  admin:
+    description: Open admin dashboard
+    usage: /admin
+    permission: generators.admin
+  report:
+    description: Report a player
+    usage: /report
+    permission: generators.use
+  reports:
+    description: View reports (admin)
+    usage: /reports
+    permission: generators.admin
+  shop:
+    description: Open the item shop
+    usage: /shop
+    permission: generators.use
+  kit:
+    description: Open the kit menu
+    usage: /kit
+    permission: generators.use
+  trade:
+    description: Trade with another player
+    usage: /trade <player|accept|decline>
+    permission: generators.use
+  claim:
+    description: Land claiming system
+    usage: /claim [create|remove|list|trust|untrust|info|cancel]
+    permission: generators.use
+  antigrief:
+    description: Toggle anti-grief protection
+    usage: /antigrief
+    permission: generators.use
+  pvp:
+    description: PvP arena commands
+    usage: /pvp [join|leave|leaderboard|list]
+    permission: generators.use
+  warp:
+    description: Warp commands
+    usage: /warp [set|delete|list|<name>]
+    permission: generators.use
+  home:
+    description: Home commands
+    usage: /home [set|delete|list|<name>]
+    permission: generators.use
+  tpa:
+    description: Teleport request
+    usage: /tpa [player|accept|deny]
+    permission: generators.use
+  tpahere:
+    description: Teleport request here
+    usage: /tpahere <player>
+    permission: generators.use
+  prestige:
+    description: Prestige system commands
+    usage: /prestige
+    permission: generators.use
+
+permissions:
+  generators.use:
+    description: Allows using generator commands
+    default: true
+  generators.place:
+    description: Allows placing generators (requires coop+ role on island)
+    default: true
+  generators.collect:
+    description: Allows collecting from generators (requires member+ role on island)
+    default: true
+  generators.upgrade:
+    description: Allows upgrading generators (requires coop+ role on island)
+    default: true
+  generators.remove:
+    description: Allows removing generators (requires owner role on island)
+    default: true
+  generators.shop:
+    description: Allows buying generators from shop
+    default: true
+  generators.admin:
+    description: Full admin access — bypasses all role checks
+    default: op
+  generators.admin.give:
+    description: Allows giving generators to players
+    default: op
+  generators.admin.reload:
+    description: Allows reloading the plugin
+    default: op
+  generators.admin.remove:
+    description: Allows removing any generator
+    default: op

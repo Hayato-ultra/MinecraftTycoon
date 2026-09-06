@@ -1,0 +1,442 @@
+# GeneratorPlugin Configuration
+# Add new generators without rewriting Java code
+
+# General settings
+settings:
+  check-interval: 1
+  offline-generation: true
+  max-generators-per-player: 50
+  hologram-enabled: true
+  hologram-height: 1.8
+  database-type: sqlite
+  pvp-worlds:
+    - pvp
+    - P_V_P
+
+# Upgrade costs per level (coins)
+upgrade-costs:
+  1: 5000
+  2: 10000
+  3: 20000
+  4: 35000
+  5: 50000
+  6: 75000
+  7: 100000
+  8: 150000
+  9: 250000
+
+# Level stats: maps level -> [interval_seconds, capacity]
+level-stats:
+  1: [60, 16]
+  2: [50, 24]
+  3: [40, 32]
+  4: [30, 48]
+  5: [25, 64]
+  6: [20, 80]
+  7: [16, 96]
+  8: [12, 128]
+  9: [9, 160]
+  10: [6, 256]
+
+# Generator definitions
+generators:
+  cobblestone:
+    name: "&fCobblestone Generator"
+    material: COBBLESTONE
+    output: COBBLESTONE
+    interval: 60
+    amount: 1
+    storage: 16
+    max-level: 10
+    price: 5000
+    category: blocks
+    description:
+      - "&7Produces cobblestone over time"
+      - "&7Output: &f1 Cobblestone &7per cycle"
+    required-island-level: 0
+
+  coal:
+    name: "&8Coal Generator"
+    material: COAL
+    output: COAL
+    interval: 45
+    amount: 1
+    storage: 16
+    max-level: 10
+    price: 15000
+    category: ores
+    description:
+      - "&7Produces coal over time"
+      - "&7Output: &f1 Coal &7per cycle"
+    required-island-level: 5
+
+  iron:
+    name: "&fIron Generator"
+    material: IRON_INGOT
+    output: IRON_INGOT
+    interval: 30
+    amount: 1
+    storage: 16
+    max-level: 10
+    price: 25000
+    category: ores
+    description:
+      - "&7Produces iron ingots over time"
+      - "&7Output: &f1 Iron Ingot &7per cycle"
+    required-island-level: 10
+
+  gold:
+    name: "&6Gold Generator"
+    material: GOLD_INGOT
+    output: GOLD_INGOT
+    interval: 45
+    amount: 1
+    storage: 16
+    max-level: 10
+    price: 40000
+    category: ores
+    description:
+      - "&7Produces gold ingots over time"
+      - "&7Output: &f1 Gold Ingot &7per cycle"
+    required-island-level: 15
+
+  diamond:
+    name: "&bDiamond Generator"
+    material: DIAMOND
+    output: DIAMOND
+    interval: 120
+    amount: 1
+    storage: 16
+    max-level: 10
+    price: 100000
+    category: ores
+    description:
+      - "&7Produces diamonds over time"
+      - "&7Output: &f1 Diamond &7per cycle"
+    required-island-level: 25
+
+  emerald:
+    name: "&aEmerald Generator"
+    material: EMERALD
+    output: EMERALD
+    interval: 90
+    amount: 1
+    storage: 16
+    max-level: 10
+    price: 75000
+    category: ores
+    description:
+      - "&7Produces emeralds over time"
+      - "&7Output: &f1 Emerald &7per cycle"
+    required-island-level: 20
+
+  redstone:
+    name: "&cRedstone Generator"
+    material: REDSTONE
+    output: REDSTONE
+    interval: 25
+    amount: 2
+    storage: 32
+    max-level: 10
+    price: 30000
+    category: ores
+    description:
+      - "&7Produces redstone over time"
+      - "&7Output: &f2 Redstone &7per cycle"
+    required-island-level: 12
+
+  lapis:
+    name: "&9Lapis Generator"
+    material: LAPIS_LAZULI
+    output: LAPIS_LAZULI
+    interval: 35
+    amount: 2
+    storage: 32
+    max-level: 10
+    price: 35000
+    category: ores
+    description:
+      - "&7Produces lapis lazuli over time"
+      - "&7Output: &f2 Lapis &7per cycle"
+    required-island-level: 14
+
+  quartz:
+    name: "&fNether Quartz Generator"
+    material: QUARTZ
+    output: QUARTZ
+    interval: 40
+    amount: 1
+    storage: 32
+    max-level: 10
+    price: 30000
+    category: nether
+    description:
+      - "&7Produces nether quartz over time"
+      - "&7Output: &f1 Quartz &7per cycle"
+    required-island-level: 10
+
+  glowstone:
+    name: "&eGlowstone Generator"
+    material: GLOWSTONE_DUST
+    output: GLOWSTONE_DUST
+    interval: 30
+    amount: 2
+    storage: 32
+    max-level: 10
+    price: 25000
+    category: nether
+    description:
+      - "&7Produces glowstone dust over time"
+      - "&7Output: &f2 Glowstone Dust &7per cycle"
+    required-island-level: 8
+
+  ancient_debris:
+    name: "&4Ancient Debris Generator"
+    material: ANCIENT_DEBRIS
+    output: ANCIENT_DEBRIS
+    interval: 300
+    amount: 1
+    storage: 8
+    max-level: 10
+    price: 500000
+    category: nether
+    description:
+      - "&7Produces ancient debris over time"
+      - "&7Output: &f1 Ancient Debris &7per cycle"
+    required-island-level: 40
+
+  stone:
+    name: "&7Stone Generator"
+    material: STONE
+    output: STONE
+    interval: 55
+    amount: 1
+    storage: 16
+    max-level: 10
+    price: 4000
+    category: blocks
+    description:
+      - "&7Produces stone over time"
+      - "&7Output: &f1 Stone &7per cycle"
+    required-island-level: 0
+
+  sand:
+    name: "&eSand Generator"
+    material: SAND
+    output: SAND
+    interval: 50
+    amount: 1
+    storage: 16
+    max-level: 10
+    price: 8000
+    category: blocks
+    description:
+      - "&7Produces sand over time"
+      - "&7Output: &f1 Sand &7per cycle"
+    required-island-level: 3
+
+  copper:
+    name: "&cCopper Generator"
+    material: COPPER_INGOT
+    output: COPPER_INGOT
+    interval: 35
+    amount: 1
+    storage: 24
+    max-level: 10
+    price: 18000
+    category: ores
+    description:
+      - "&7Produces copper ingots over time"
+      - "&7Output: &f1 Copper Ingot &7per cycle"
+    required-island-level: 8
+
+  # Money Generators - produce coins directly
+  money_basic:
+    name: "&6Basic Money Generator"
+    material: GOLD_NUGGET
+    output: GOLD_NUGGET
+    interval: 30
+    amount: 1
+    storage: 32
+    max-level: 10
+    price: 10000
+    category: money
+    is-money-generator: true
+    money-per-item: 50
+    description:
+      - "&7Produces gold nuggets worth coins"
+      - "&7Value: &650 coins &7per nugget"
+      - "&7Sell at /shop or sell chest"
+    required-island-level: 5
+
+  money_advanced:
+    name: "&6Advanced Money Generator"
+    material: GOLD_INGOT
+    output: GOLD_INGOT
+    interval: 45
+    amount: 1
+    storage: 24
+    max-level: 10
+    price: 50000
+    category: money
+    is-money-generator: true
+    money-per-item: 250
+    description:
+      - "&7Produces gold ingots worth coins"
+      - "&7Value: &6250 coins &7per ingot"
+      - "&7Sell at /shop or sell chest"
+    required-island-level: 15
+
+  money_ultimate:
+    name: "&6Ultimate Money Generator"
+    material: GOLD_BLOCK
+    output: GOLD_BLOCK
+    interval: 120
+    amount: 1
+    storage: 16
+    max-level: 10
+    price: 250000
+    category: money
+    is-money-generator: true
+    money-per-item: 1500
+    description:
+      - "&7Produces gold blocks worth coins"
+      - "&7Value: &61,500 coins &7per block"
+      - "&7Sell at /shop or sell chest"
+    required-island-level: 30
+
+  money_diamond:
+    name: "&bDiamond Money Generator"
+    material: DIAMOND
+    output: DIAMOND
+    interval: 90
+    amount: 1
+    storage: 16
+    max-level: 10
+    price: 150000
+    category: money
+    is-money-generator: true
+    money-per-item: 800
+    description:
+      - "&7Produces diamonds worth coins"
+      - "&7Value: &6800 coins &7per diamond"
+      - "&7Sell at /shop or sell chest"
+    required-island-level: 25
+
+  money_netherite:
+    name: "&4Netherite Money Generator"
+    material: NETHERITE_INGOT
+    output: NETHERITE_INGOT
+    interval: 300
+    amount: 1
+    storage: 8
+    max-level: 10
+    price: 1000000
+    category: money
+    is-money-generator: true
+    money-per-item: 5000
+    description:
+      - "&7Produces netherite ingots worth coins"
+      - "&7Value: &65,000 coins &7per ingot"
+      - "&7Sell at /shop or sell chest"
+    required-island-level: 50
+
+  # Sell Chest - automatically sells items placed in it
+  sell_chest:
+    name: "&aSell Chest"
+    material: CHEST
+    output: CHEST
+    interval: 10
+    amount: 1
+    storage: 1
+    max-level: 1
+    price: 25000
+    category: utility
+    is-sell-chest: true
+    description:
+      - "&7Place items in this chest"
+      - "&7They are automatically sold"
+      - "&7for their sell value"
+    required-island-level: 10
+
+# Sell prices for items (coins per item)
+sell-prices:
+  COBBLESTONE: 1
+  STONE: 2
+  SAND: 3
+  COAL: 5
+  COPPER_INGOT: 8
+  IRON_INGOT: 15
+  LAPIS_LAZULI: 10
+  REDSTONE: 8
+  QUARTZ: 12
+  GLOWSTONE_DUST: 10
+  GOLD_INGOT: 25
+  EMERALD: 40
+  DIAMOND: 50
+  ANCIENT_DEBRIS: 200
+  NETHERITE_INGOT: 500
+  GOLD_NUGGET: 3
+  GOLD_BLOCK: 225
+
+# Daily reward settings
+daily-rewards:
+  enabled: true
+  rewards:
+    1: { coins: 500, item: COAL, item-amount: 8 }
+    2: { coins: 1000, item: IRON_INGOT, item-amount: 4 }
+    3: { coins: 2000, item: GOLD_INGOT, item-amount: 2 }
+    4: { coins: 3500, item: DIAMOND, item-amount: 1 }
+    5: { coins: 5000, item: EMERALD, item-amount: 2 }
+    6: { coins: 7500, item: DIAMOND, item-amount: 3 }
+    7: { coins: 15000, item: NETHERITE_INGOT, item-amount: 1 }
+
+# Level XP requirements (level -> XP needed)
+level-xp:
+  1: 100
+  2: 250
+  3: 500
+  4: 1000
+  5: 2000
+  6: 4000
+  7: 8000
+  8: 15000
+  9: 30000
+  10: 50000
+
+# XP sources
+xp-sources:
+  generator-collect: 5
+  generator-place: 10
+  generator-upgrade: 25
+  block-break: 1
+  block-place: 1
+  mob-kill: 10
+  player-kill: 50
+
+# Category display names
+categories:
+  blocks:
+    name: "&fBlocks"
+    material: COBBLESTONE
+    description: "&7Basic block generators"
+  ores:
+    name: "&6Ores"
+    material: DIAMOND_ORE
+    description: "&7Valuable ore generators"
+  nether:
+    name: "&cNether"
+    material: NETHERRACK
+    description: "&7Nether resource generators"
+  special:
+    name: "&dSpecial"
+    material: NETHER_STAR
+    description: "&7Special event generators"
+  money:
+    name: "&6Money"
+    material: GOLD_INGOT
+    description: "&7Generators that produce coins"
+  utility:
+    name: "&aUtility"
+    material: CHEST
+    description: "&7Utility generators"
