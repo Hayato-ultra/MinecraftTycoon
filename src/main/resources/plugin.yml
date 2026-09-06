@@ -103,6 +103,38 @@ commands:
     description: OneBlock commands
     usage: /oneblock [info|phases|quests|events|leaderboard|reset]
     permission: generators.use
+  back:
+    description: Return to previous location
+    usage: /back
+    permission: generators.use
+  hat:
+    description: Wear item as hat
+    usage: /hat
+    permission: generators.use
+  near:
+    description: See nearby players
+    usage: /near [radius]
+    permission: generators.use
+  fly:
+    description: Toggle flight mode
+    usage: /fly
+    permission: generators.fly
+  spawn:
+    description: Teleport to spawn
+    usage: /spawn [set|remove|list|<name>]
+    permission: generators.use
+  community:
+    description: Community areas
+    usage: /community [list|unlock|tp]
+    permission: generators.use
+  playershop:
+    description: Player shops
+    usage: /playershop [create|delete|list]
+    permission: generators.use
+  smp:
+    description: SMP commands
+    usage: /smp [event|list|stop]
+    permission: generators.use
 
 permissions:
   generators.use:
@@ -134,4 +166,7 @@ permissions:
     default: op
   generators.admin.remove:
     description: Allows removing any generator
+    default: op
+  generators.fly:
+    description: Allows using fly command
     default: op

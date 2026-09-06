@@ -29,10 +29,23 @@ import com.generator.oneblock.OneBlockManager;
 import com.generator.oneblock.OneBlockQuestManager;
 import com.generator.oneblock.OneBlockEventManager;
 import com.generator.oneblock.OneBlockGUI;
+import com.generator.smp.SpawnManager;
+import com.generator.smp.CommunityManager;
+import com.generator.smp.PlayerShopManager;
+import com.generator.smp.SMPEventManager;
 import com.generator.storage.DatabaseManager;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.Command;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.Material;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class GeneratorPlugin extends JavaPlugin {
 
@@ -63,6 +76,10 @@ public class GeneratorPlugin extends JavaPlugin {
     private OneBlockQuestManager oneBlockQuestManager;
     private OneBlockEventManager oneBlockEventManager;
     private OneBlockGUI oneBlockGUI;
+    private SpawnManager spawnManager;
+    private CommunityManager communityManager;
+    private PlayerShopManager playerShopManager;
+    private SMPEventManager smpEventManager;
 
     @Override
     public void onEnable() {
@@ -120,6 +137,11 @@ public class GeneratorPlugin extends JavaPlugin {
         oneBlockEventManager = new OneBlockEventManager(this, oneBlockManager);
         oneBlockGUI = new OneBlockGUI(this, oneBlockManager, oneBlockQuestManager, oneBlockEventManager);
 
+        spawnManager = new SpawnManager(this);
+        communityManager = new CommunityManager(this);
+        playerShopManager = new PlayerShopManager(this);
+        smpEventManager = new SMPEventManager(this);
+
         getServer().getPluginManager().registerEvents(new GeneratorListener(this), this);
         getServer().getPluginManager().registerEvents(guiManager, this);
         getServer().getPluginManager().registerEvents(menuManager, this);
@@ -142,6 +164,10 @@ public class GeneratorPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(oneBlockQuestManager, this);
         getServer().getPluginManager().registerEvents(oneBlockEventManager, this);
         getServer().getPluginManager().registerEvents(oneBlockGUI, this);
+        getServer().getPluginManager().registerEvents(spawnManager, this);
+        getServer().getPluginManager().registerEvents(communityManager, this);
+        getServer().getPluginManager().registerEvents(playerShopManager, this);
+        getServer().getPluginManager().registerEvents(smpEventManager, this);
 
         getCommand("generator").setExecutor(new GeneratorCommand(this));
         getCommand("generatorshop").setExecutor(new GeneratorCommand(this));
@@ -578,6 +604,234 @@ public class GeneratorPlugin extends JavaPlugin {
             return true;
         });
 
+        getCommand("back").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                spawnManager.goBack(player);
+            }
+            return true;
+        });
+
+        getCommand("hat").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                ItemStack helmet = player.getInventory().getHelmet();
+                ItemStack hand = player.getInventory().getItemInMainHand();
+                if (hand.getType() == Material.AIR) {
+                    player.sendMessage(org.bukkit.ChatColor.RED + "Hold an item to wear as a hat!");
+                    return true;
+                }
+                player.getInventory().setHelmet(hand);
+                player.getInventory().setItemInMainHand(helmet);
+                player.sendMessage(org.bukkit.ChatColor.GREEN + "Hat equipped!");
+            }
+            return true;
+        });
+
+        getCommand("near").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                int radius = args.length > 0 ? Integer.parseInt(args[0]) : 50;
+                List<Player> nearby = new ArrayList<>();
+                for (Player p : player.getWorld().getPlayers()) {
+                    if (p != player && p.getLocation().distance(player.getLocation()) <= radius) {
+                        nearby.add(p);
+                    }
+                }
+                if (nearby.isEmpty()) {
+                    player.sendMessage(org.bukkit.ChatColor.YELLOW + "No players within " + radius + " blocks.");
+                } else {
+                    player.sendMessage(org.bukkit.ChatColor.GREEN + "=== PLAYERS NEARBY ===");
+                    for (Player p : nearby) {
+                        int dist = (int) p.getLocation().distance(player.getLocation());
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + p.getName() + " - " + dist + " blocks");
+                    }
+                }
+            }
+            return true;
+        });
+
+        getCommand("fly").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (player.hasPermission("generators.fly")) {
+                    if (player.getAllowFlight()) {
+                        player.setAllowFlight(false);
+                        player.setFlying(false);
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "Fly mode disabled.");
+                    } else {
+                        player.setAllowFlight(true);
+                        player.sendMessage(org.bukkit.ChatColor.GREEN + "Fly mode enabled.");
+                    }
+                } else {
+                    player.sendMessage(org.bukkit.ChatColor.RED + "You don't have permission to fly!");
+                }
+            }
+            return true;
+        });
+
+        getCommand("spawn").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    spawnManager.teleportToDefaultSpawn(player);
+                    return true;
+                }
+                String sub = args[0].toLowerCase();
+                if (sub.equals("set") && args.length >= 2 && sender.hasPermission("generators.admin")) {
+                    spawnManager.setSpawn(args[1], player.getLocation());
+                    player.sendMessage(org.bukkit.ChatColor.GREEN + "Spawn set: " + args[1]);
+                } else if (sub.equals("remove") && args.length >= 2 && sender.hasPermission("generators.admin")) {
+                    if (spawnManager.removeSpawn(args[1])) {
+                        player.sendMessage(org.bukkit.ChatColor.GREEN + "Spawn removed: " + args[1]);
+                    } else {
+                        player.sendMessage(org.bukkit.ChatColor.RED + "Spawn not found!");
+                    }
+                } else if (sub.equals("list") && sender.hasPermission("generators.admin")) {
+                    player.sendMessage(org.bukkit.ChatColor.GREEN + "=== SPAWNS ===");
+                    for (Map.Entry<String, org.bukkit.Location> entry : spawnManager.getAllSpawns().entrySet()) {
+                        org.bukkit.Location loc = entry.getValue();
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + entry.getKey() + ": " +
+                                loc.getWorld().getName() + " (" + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ() + ")");
+                    }
+                } else {
+                    spawnManager.teleportToSpawn(player, sub);
+                }
+            } else if (sender.hasPermission("generators.admin") && args.length >= 3 && args[0].equalsIgnoreCase("set")) {
+                org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(args[1]);
+                if (target != null) {
+                    spawnManager.setSpawn(args[2], target.getLocation());
+                    sender.sendMessage(org.bukkit.ChatColor.GREEN + "Spawn set: " + args[2]);
+                } else {
+                    sender.sendMessage(org.bukkit.ChatColor.RED + "Player not found!");
+                }
+            }
+            return true;
+        });
+
+        getCommand("community").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    openCommunityGUI(player);
+                    return true;
+                }
+                String sub = args[0].toLowerCase();
+                switch (sub) {
+                    case "list" -> {
+                        player.sendMessage(org.bukkit.ChatColor.GREEN + "=== COMMUNITY AREAS ===");
+                        for (CommunityManager.CommunityArea area : communityManager.getAllAreas()) {
+                            boolean unlocked = communityManager.canAccess(player, area.id);
+                            String status = unlocked ? "§a[Unlocked]" : "§c[Locked]";
+                            player.sendMessage(org.bukkit.ChatColor.YELLOW + area.displayName + " " + status +
+                                    " §7- " + area.description);
+                        }
+                    }
+                    case "unlock" -> {
+                        if (args.length < 2) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /community unlock <area>");
+                            return true;
+                        }
+                        communityManager.unlockArea(player, args[1]);
+                    }
+                    case "tp", "teleport" -> {
+                        if (args.length < 2) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /community tp <area>");
+                            return true;
+                        }
+                        communityManager.teleportToArea(player, args[1]);
+                    }
+                    default -> openCommunityGUI(player);
+                }
+            }
+            return true;
+        });
+
+        getCommand("community").setTabCompleter((sender, command, alias, args) -> {
+            if (args.length == 1) return java.util.List.of("list", "unlock", "tp");
+            if (args.length == 2 && (args[0].equalsIgnoreCase("unlock") || args[0].equalsIgnoreCase("tp"))) {
+                return communityManager.getAllAreas().stream()
+                        .map(a -> a.id)
+                        .filter(id -> id.toLowerCase().startsWith(args[1].toLowerCase()))
+                        .toList();
+            }
+            return java.util.Collections.emptyList();
+        });
+
+        getCommand("playershop").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    openPlayerShopListGUI(player);
+                    return true;
+                }
+                String sub = args[0].toLowerCase();
+                switch (sub) {
+                    case "create" -> {
+                        if (args.length < 4) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /playershop create <name> <material> <buyPrice> [sellPrice]");
+                            return true;
+                        }
+                        Material mat = Material.matchMaterial(args[2].toUpperCase());
+                        if (mat == null) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Invalid material: " + args[2]);
+                            return true;
+                        }
+                        int buyPrice;
+                        try {
+                            buyPrice = Integer.parseInt(args[3]);
+                        } catch (NumberFormatException e) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Invalid buy price!");
+                            return true;
+                        }
+                        int sellPrice = args.length >= 5 ? Integer.parseInt(args[4]) : 0;
+                        playerShopManager.createShop(player, args[1], mat, buyPrice, sellPrice);
+                    }
+                    case "delete" -> {
+                        if (args.length < 2) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /playershop delete <shopId>");
+                            return true;
+                        }
+                        playerShopManager.deleteShop(player, args[1]);
+                    }
+                    case "list" -> {
+                        List<PlayerShopManager.PlayerShop> myShops = playerShopManager.getPlayerShops(player.getUniqueId());
+                        if (myShops.isEmpty()) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "You have no shops!");
+                        } else {
+                            player.sendMessage(org.bukkit.ChatColor.GREEN + "=== YOUR SHOPS ===");
+                            for (PlayerShopManager.PlayerShop shop : myShops) {
+                                player.sendMessage(org.bukkit.ChatColor.YELLOW + shop.name + " §7(" + shop.id + ") §f- " + shop.itemName);
+                            }
+                        }
+                    }
+                    default -> openPlayerShopListGUI(player);
+                }
+            }
+            return true;
+        });
+
+        getCommand("smp").setExecutor((sender, command, label, args) -> {
+            if (args.length == 0) {
+                sender.sendMessage(org.bukkit.ChatColor.YELLOW + "Usage: /smp event <type>");
+                return true;
+            }
+            String sub = args[0].toLowerCase();
+            if (sub.equals("event") && args.length >= 2 && sender.hasPermission("generators.admin")) {
+                String type = args[1].toLowerCase();
+                if (smpEventManager.canStartEvent(type)) {
+                    smpEventManager.startEvent(type);
+                    sender.sendMessage(org.bukkit.ChatColor.GREEN + "Started event: " + type);
+                } else {
+                    sender.sendMessage(org.bukkit.ChatColor.RED + "Event on cooldown or already active!");
+                }
+            } else if (sub.equals("list")) {
+                sender.sendMessage(org.bukkit.ChatColor.GREEN + "=== ACTIVE EVENTS ===");
+                for (SMPEventManager.SMPEvent event : smpEventManager.getAllActiveEvents()) {
+                    sender.sendMessage(org.bukkit.ChatColor.YELLOW + event.displayName + " §7(" + event.type + ")");
+                }
+            } else if (sub.equals("stop") && args.length >= 2 && sender.hasPermission("generators.admin")) {
+                smpEventManager.endEvent(args[1]);
+                sender.sendMessage(org.bukkit.ChatColor.GREEN + "Event stopped.");
+            } else {
+                sender.sendMessage(org.bukkit.ChatColor.RED + "Usage: /smp event <type> | /smp list | /smp stop <id>");
+            }
+            return true;
+        });
+
         getServer().getScheduler().runTaskLater(this, () -> {
             generatorManager.loadAll();
             generatorManager.enable();
@@ -620,6 +874,13 @@ public class GeneratorPlugin extends JavaPlugin {
         if (oneBlockQuestManager != null) {
             oneBlockQuestManager.saveQuests();
             oneBlockQuestManager.saveCompletedQuests();
+        }
+        if (communityManager != null) {
+            communityManager.saveAreas();
+            communityManager.saveUnlocked();
+        }
+        if (playerShopManager != null) {
+            playerShopManager.saveShops();
         }
         if (databaseManager != null) {
             databaseManager.disconnect();
@@ -733,5 +994,94 @@ public class GeneratorPlugin extends JavaPlugin {
 
     public OneBlockGUI getOneBlockGUI() {
         return oneBlockGUI;
+    }
+
+    public SpawnManager getSpawnManager() {
+        return spawnManager;
+    }
+
+    public CommunityManager getCommunityManager() {
+        return communityManager;
+    }
+
+    public PlayerShopManager getPlayerShopManager() {
+        return playerShopManager;
+    }
+
+    public SMPEventManager getSMPEventManager() {
+        return smpEventManager;
+    }
+
+    private ItemStack createItem(Material material, String name, String... lore) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(name);
+            if (lore.length > 0) {
+                meta.setLore(java.util.Arrays.asList(lore));
+            }
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private void openCommunityGUI(Player player) {
+        org.bukkit.inventory.Inventory gui = org.bukkit.Bukkit.createInventory(null, 27, "COMMUNITY_MENU");
+
+        int slot = 10;
+        for (CommunityManager.CommunityArea area : communityManager.getAllAreas()) {
+            if (slot >= 17) break;
+            boolean unlocked = communityManager.canAccess(player, area.id);
+            org.bukkit.inventory.ItemStack item = new org.bukkit.inventory.ItemStack(area.material != null ? area.material : org.bukkit.Material.CHEST);
+            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(org.bukkit.ChatColor.GOLD + area.displayName);
+                meta.setLore(java.util.Arrays.asList(
+                        "",
+                        "§7" + area.description,
+                        "",
+                        unlocked ? "§aClick to teleport" : "§cLocked - Click to unlock",
+                        unlocked ? "" : "§7Cost: §6" + area.requiredCoins + " coins"
+                ));
+                item.setItemMeta(meta);
+            }
+            gui.setItem(slot, item);
+            slot++;
+            if (slot == 17) slot = 19;
+        }
+
+        gui.setItem(22, createItem(org.bukkit.Material.BARRIER, org.bukkit.ChatColor.RED + "Close"));
+
+        player.openInventory(gui);
+    }
+
+    private void openPlayerShopListGUI(Player player) {
+        org.bukkit.inventory.Inventory gui = org.bukkit.Bukkit.createInventory(null, 54, "PLAYER_SHOPS_LIST");
+
+        List<PlayerShopManager.PlayerShop> shops = playerShopManager.getAllShops();
+        int slot = 0;
+        for (PlayerShopManager.PlayerShop shop : shops) {
+            if (slot >= 45) break;
+            org.bukkit.inventory.ItemStack item = new org.bukkit.inventory.ItemStack(shop.item != null ? shop.item : org.bukkit.Material.CHEST);
+            org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(org.bukkit.ChatColor.GOLD + shop.name);
+                meta.setLore(java.util.Arrays.asList(
+                        "",
+                        "§7Owner: §f" + org.bukkit.Bukkit.getOfflinePlayer(shop.owner).getName(),
+                        "§7Item: §f" + shop.itemName,
+                        "§7Buy: §6" + shop.buyPrice + " §7coins",
+                        "§7Sell: §6" + shop.sellPrice + " §7coins",
+                        "§7Stock: §f" + shop.stock + "/" + shop.maxStock
+                ));
+                item.setItemMeta(meta);
+            }
+            gui.setItem(slot, item);
+            slot++;
+        }
+
+        gui.setItem(53, createItem(org.bukkit.Material.BARRIER, org.bukkit.ChatColor.RED + "Close"));
+
+        player.openInventory(gui);
     }
 }
