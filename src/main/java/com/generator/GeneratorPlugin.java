@@ -6,6 +6,8 @@ import com.generator.config.ConfigManager;
 import com.generator.economy.EconomyHook;
 import com.generator.economy.CoinManager;
 import com.generator.generator.GeneratorManager;
+import com.generator.generator.FutureGenManager;
+import com.generator.generator.FutureGenGUI;
 import com.generator.gui.GUIManager;
 import com.generator.gui.MenuManager;
 import com.generator.gui.ProfileGUI;
@@ -100,6 +102,8 @@ public class GeneratorPlugin extends JavaPlugin {
     private CommunityManager communityManager;
     private PlayerShopManager playerShopManager;
     private SMPEventManager smpEventManager;
+    private FutureGenManager futureGenManager;
+    private FutureGenGUI futureGenGUI;
 
     @Override
     public void onEnable() {
@@ -173,6 +177,9 @@ public class GeneratorPlugin extends JavaPlugin {
         playerShopManager = new PlayerShopManager(this);
         smpEventManager = new SMPEventManager(this);
 
+        futureGenManager = new FutureGenManager(this);
+        futureGenGUI = new FutureGenGUI(this);
+
         getServer().getPluginManager().registerEvents(new GeneratorListener(this), this);
         getServer().getPluginManager().registerEvents(guiManager, this);
         getServer().getPluginManager().registerEvents(menuManager, this);
@@ -204,6 +211,7 @@ public class GeneratorPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(communityManager, this);
         getServer().getPluginManager().registerEvents(playerShopManager, this);
         getServer().getPluginManager().registerEvents(smpEventManager, this);
+        getServer().getPluginManager().registerEvents(futureGenGUI, this);
 
         getCommand("generator").setExecutor(new GeneratorCommand(this));
         getCommand("generatorshop").setExecutor(new GeneratorCommand(this));
@@ -1023,6 +1031,33 @@ public class GeneratorPlugin extends JavaPlugin {
             return java.util.Collections.emptyList();
         });
 
+        getCommand("futuregen").setExecutor((sender, command, label, args) -> {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("Players only!");
+                return true;
+            }
+            if (args.length == 0) {
+                futureGenGUI.openFutureGenMenu(player);
+                return true;
+            }
+            String sub = args[0].toLowerCase();
+            switch (sub) {
+                case "fusion" -> futureGenGUI.openFusionGUI(player);
+                case "evolution" -> futureGenGUI.openEvolutionGUI(player);
+                case "secret", "secrets" -> futureGenGUI.openSecretsGUI(player);
+                case "mastery" -> futureGenGUI.openMasteryGUI(player);
+                case "spec", "specialization" -> futureGenGUI.openSpecializationGUI(player);
+                case "stats" -> futureGenGUI.openProductionStatsGUI(player);
+                default -> futureGenGUI.openFutureGenMenu(player);
+            }
+            return true;
+        });
+
+        getCommand("futuregen").setTabCompleter((sender, command, alias, args) -> {
+            if (args.length == 1) return java.util.List.of("fusion", "evolution", "secrets", "mastery", "specialization", "stats");
+            return java.util.Collections.emptyList();
+        });
+
         getServer().getScheduler().runTaskLater(this, () -> {
             generatorManager.loadAll();
             generatorManager.enable();
@@ -1089,6 +1124,9 @@ public class GeneratorPlugin extends JavaPlugin {
         }
         if (playerShopManager != null) {
             playerShopManager.saveShops();
+        }
+        if (futureGenManager != null) {
+            futureGenManager.saveAll();
         }
         if (databaseManager != null) {
             databaseManager.disconnect();
@@ -1258,6 +1296,14 @@ public class GeneratorPlugin extends JavaPlugin {
 
     public SMPEventManager getSMPEventManager() {
         return smpEventManager;
+    }
+
+    public FutureGenManager getFutureGenManager() {
+        return futureGenManager;
+    }
+
+    public FutureGenGUI getFutureGenGUI() {
+        return futureGenGUI;
     }
 
     private ItemStack createItem(Material material, String name, String... lore) {

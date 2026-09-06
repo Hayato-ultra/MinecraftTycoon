@@ -143,6 +143,10 @@ commands:
     description: Season system
     usage: /season [info|leaderboard|quests|rewards|claim|next]
     permission: generators.use
+  futuregen:
+    description: Future generator system - Fusion, Evolution, Secrets, Mastery
+    usage: /futuregen [fusion|evolution|secrets|mastery|specialization|stats]
+    permission: generators.use
 
 permissions:
   generators.use:

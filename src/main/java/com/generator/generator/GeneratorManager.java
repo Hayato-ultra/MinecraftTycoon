@@ -175,8 +175,17 @@ public class GeneratorManager {
             if (gen.isFull(configManager)) continue;
 
             int interval = gen.getInterval(configManager) * 1000;
+            if (plugin.getFutureGenManager() != null) {
+                interval = plugin.getFutureGenManager().getAdjustedInterval(
+                        gen.getOwnerUUID(), gen.getType(), interval) * 1000;
+            }
             if (now - gen.getLastGeneration() >= interval) {
                 int amount = gen.getOutputAmount(configManager);
+                if (plugin.getFutureGenManager() != null) {
+                    double mult = plugin.getFutureGenManager().getProductionMultiplier(
+                            gen.getOwnerUUID(), gen.getType());
+                    amount = (int) Math.ceil(amount * mult);
+                }
                 if (gen.canAdd(amount, configManager)) {
                     gen.setStoredAmount(gen.getStoredAmount() + amount);
                     gen.setLastGeneration(now);
@@ -217,6 +226,9 @@ public class GeneratorManager {
             }
 
             plugin.getLevelManager().addXp(player, plugin.getConfigManager().getXpSource("generator-collect"));
+            if (plugin.getFutureGenManager() != null) {
+                plugin.getFutureGenManager().addMastery(player.getUniqueId(), gen.getType(), 1);
+            }
             return true;
         }
 
@@ -253,6 +265,10 @@ public class GeneratorManager {
         PlayerProfile profile = plugin.getProfileManager().getProfileIfLoaded(player.getUniqueId());
         if (profile != null) {
             profile.addGeneratorsCollected();
+        }
+
+        if (plugin.getFutureGenManager() != null) {
+            plugin.getFutureGenManager().addMastery(player.getUniqueId(), gen.getType(), 1);
         }
 
         return true;
