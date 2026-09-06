@@ -135,6 +135,14 @@ commands:
     description: SMP commands
     usage: /smp [event|list|stop]
     permission: generators.use
+  events:
+    description: Server events
+    usage: /events [create|stop|list]
+    permission: generators.use
+  season:
+    description: Season system
+    usage: /season [info|leaderboard|quests|rewards|claim|next]
+    permission: generators.use
 
 permissions:
   generators.use:

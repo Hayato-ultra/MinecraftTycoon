@@ -34,6 +34,11 @@ import com.generator.oneblock.OneBlockManager;
 import com.generator.oneblock.OneBlockQuestManager;
 import com.generator.oneblock.OneBlockEventManager;
 import com.generator.oneblock.OneBlockGUI;
+import com.generator.events.EventManager;
+import com.generator.events.SeasonManager;
+import com.generator.events.SeasonalQuestManager;
+import com.generator.events.SeasonalLeaderboardGUI;
+import com.generator.events.SeasonalRewardManager;
 import com.generator.smp.SpawnManager;
 import com.generator.smp.CommunityManager;
 import com.generator.smp.PlayerShopManager;
@@ -86,6 +91,11 @@ public class GeneratorPlugin extends JavaPlugin {
     private OneBlockQuestManager oneBlockQuestManager;
     private OneBlockEventManager oneBlockEventManager;
     private OneBlockGUI oneBlockGUI;
+    private EventManager eventManager;
+    private SeasonManager seasonManager;
+    private SeasonalQuestManager seasonalQuestManager;
+    private SeasonalLeaderboardGUI seasonalLeaderboardGUI;
+    private SeasonalRewardManager seasonalRewardManager;
     private SpawnManager spawnManager;
     private CommunityManager communityManager;
     private PlayerShopManager playerShopManager;
@@ -152,6 +162,12 @@ public class GeneratorPlugin extends JavaPlugin {
         oneBlockEventManager = new OneBlockEventManager(this, oneBlockManager);
         oneBlockGUI = new OneBlockGUI(this, oneBlockManager, oneBlockQuestManager, oneBlockEventManager);
 
+        eventManager = new EventManager(this);
+        seasonManager = new SeasonManager(this);
+        seasonalQuestManager = new SeasonalQuestManager(this, seasonManager);
+        seasonalLeaderboardGUI = new SeasonalLeaderboardGUI(this, seasonManager, eventManager, seasonalQuestManager);
+        seasonalRewardManager = new SeasonalRewardManager(this, seasonManager);
+
         spawnManager = new SpawnManager(this);
         communityManager = new CommunityManager(this);
         playerShopManager = new PlayerShopManager(this);
@@ -181,6 +197,8 @@ public class GeneratorPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(oneBlockQuestManager, this);
         getServer().getPluginManager().registerEvents(oneBlockEventManager, this);
         getServer().getPluginManager().registerEvents(oneBlockGUI, this);
+        getServer().getPluginManager().registerEvents(eventManager, this);
+        getServer().getPluginManager().registerEvents(seasonalLeaderboardGUI, this);
         getServer().getPluginManager().registerEvents(spawnManager, this);
         getServer().getPluginManager().registerEvents(communityManager, this);
         getServer().getPluginManager().registerEvents(playerShopManager, this);
@@ -925,6 +943,85 @@ public class GeneratorPlugin extends JavaPlugin {
             return true;
         });
 
+        getCommand("events").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    eventManager.openEventGUI(player);
+                    return true;
+                }
+                String sub = args[0].toLowerCase();
+                switch (sub) {
+                    case "create" -> {
+                        if (args.length < 6 || !sender.hasPermission("generators.admin")) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /events create <name> <type> <duration> <reward> <required>");
+                            return true;
+                        }
+                        long duration;
+                        int reward;
+                        int required;
+                        try {
+                            duration = Long.parseLong(args[3]) * 60000;
+                            reward = Integer.parseInt(args[4]);
+                            required = Integer.parseInt(args[5]);
+                        } catch (NumberFormatException e) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Invalid numbers!");
+                            return true;
+                        }
+                        eventManager.createEvent(args[1], args[2], duration, reward, required);
+                        player.sendMessage(org.bukkit.ChatColor.GREEN + "Event created!");
+                    }
+                    case "stop" -> {
+                        if (args.length < 2 || !sender.hasPermission("generators.admin")) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /events stop <id>");
+                            return true;
+                        }
+                        eventManager.endEvent(args[1]);
+                        player.sendMessage(org.bukkit.ChatColor.GREEN + "Event stopped.");
+                    }
+                    case "list" -> {
+                        eventManager.openEventGUI(player);
+                    }
+                    default -> eventManager.openEventGUI(player);
+                }
+            }
+            return true;
+        });
+
+        getCommand("events").setTabCompleter((sender, command, alias, args) -> {
+            if (args.length == 1) return java.util.List.of("create", "stop", "list");
+            return java.util.Collections.emptyList();
+        });
+
+        getCommand("season").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof org.bukkit.entity.Player player) {
+                if (args.length == 0) {
+                    seasonManager.openSeasonGUI(player);
+                    return true;
+                }
+                String sub = args[0].toLowerCase();
+                switch (sub) {
+                    case "info" -> seasonalLeaderboardGUI.openSeasonInfo(player);
+                    case "leaderboard", "lb" -> seasonalLeaderboardGUI.openLeaderboard(player, args.length >= 2 ? args[1] : "xp");
+                    case "quests" -> seasonalQuestManager.openQuestGUI(player);
+                    case "rewards" -> seasonalRewardManager.openRewardGUI(player);
+                    case "claim" -> seasonalRewardManager.claimSeasonRewards(player);
+                    case "next" -> {
+                        if (sender.hasPermission("generators.admin")) {
+                            seasonManager.activateNextSeason();
+                            player.sendMessage(org.bukkit.ChatColor.GREEN + "Activated next season!");
+                        }
+                    }
+                    default -> seasonManager.openSeasonGUI(player);
+                }
+            }
+            return true;
+        });
+
+        getCommand("season").setTabCompleter((sender, command, alias, args) -> {
+            if (args.length == 1) return java.util.List.of("info", "leaderboard", "quests", "rewards", "claim", "next");
+            return java.util.Collections.emptyList();
+        });
+
         getServer().getScheduler().runTaskLater(this, () -> {
             generatorManager.loadAll();
             generatorManager.enable();
@@ -955,6 +1052,17 @@ public class GeneratorPlugin extends JavaPlugin {
         }
         if (pvpSeasonManager != null) {
             pvpSeasonManager.saveSeasons();
+        }
+        if (eventManager != null) {
+            eventManager.saveEvents();
+        }
+        if (seasonManager != null) {
+            seasonManager.saveSeasons();
+            seasonManager.savePlayerData();
+        }
+        if (seasonalQuestManager != null) {
+            seasonalQuestManager.saveQuests();
+            seasonalQuestManager.saveProgress();
         }
         if (warpManager != null) {
             warpManager.saveWarps();
@@ -1085,6 +1193,26 @@ public class GeneratorPlugin extends JavaPlugin {
 
     public PvPLeaderboardGUI getPvPLeaderboardGUI() {
         return pvpLeaderboardGUI;
+    }
+
+    public EventManager getEventManager() {
+        return eventManager;
+    }
+
+    public SeasonManager getSeasonManager() {
+        return seasonManager;
+    }
+
+    public SeasonalQuestManager getSeasonalQuestManager() {
+        return seasonalQuestManager;
+    }
+
+    public SeasonalLeaderboardGUI getSeasonalLeaderboardGUI() {
+        return seasonalLeaderboardGUI;
+    }
+
+    public SeasonalRewardManager getSeasonalRewardManager() {
+        return seasonalRewardManager;
     }
 
     public WarpManager getWarpManager() {
