@@ -22,6 +22,11 @@ import com.generator.shop.TradeManager;
 import com.generator.grief.AntiGriefManager;
 import com.generator.grief.ClaimManager;
 import com.generator.pvp.ArenaManager;
+import com.generator.pvp.PvPStatsManager;
+import com.generator.pvp.PvPRankManager;
+import com.generator.pvp.PvPSeasonManager;
+import com.generator.pvp.PvPTournamentManager;
+import com.generator.pvp.PvPLeaderboardGUI;
 import com.generator.warp.WarpManager;
 import com.generator.prestige.PrestigeManager;
 import com.generator.prestige.PrestigeGUI;
@@ -69,6 +74,11 @@ public class GeneratorPlugin extends JavaPlugin {
     private AntiGriefManager antiGriefManager;
     private ClaimManager claimManager;
     private ArenaManager arenaManager;
+    private PvPStatsManager pvpStatsManager;
+    private PvPRankManager pvpRankManager;
+    private PvPSeasonManager pvpSeasonManager;
+    private PvPTournamentManager pvpTournamentManager;
+    private PvPLeaderboardGUI pvpLeaderboardGUI;
     private WarpManager warpManager;
     private PrestigeManager prestigeManager;
     private PrestigeGUI prestigeGUI;
@@ -126,6 +136,11 @@ public class GeneratorPlugin extends JavaPlugin {
         claimManager = new ClaimManager(this);
 
         arenaManager = new ArenaManager(this);
+        pvpStatsManager = new PvPStatsManager(this);
+        pvpRankManager = new PvPRankManager();
+        pvpSeasonManager = new PvPSeasonManager(this, pvpStatsManager);
+        pvpTournamentManager = new PvPTournamentManager(this, pvpStatsManager);
+        pvpLeaderboardGUI = new PvPLeaderboardGUI(this, pvpStatsManager, pvpRankManager, pvpSeasonManager);
 
         warpManager = new WarpManager(this);
 
@@ -158,6 +173,8 @@ public class GeneratorPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(antiGriefManager, this);
         getServer().getPluginManager().registerEvents(claimManager, this);
         getServer().getPluginManager().registerEvents(arenaManager, this);
+        getServer().getPluginManager().registerEvents(pvpTournamentManager, this);
+        getServer().getPluginManager().registerEvents(pvpLeaderboardGUI, this);
         getServer().getPluginManager().registerEvents(warpManager, this);
         getServer().getPluginManager().registerEvents(prestigeGUI, this);
         getServer().getPluginManager().registerEvents(oneBlockManager, this);
@@ -398,7 +415,77 @@ public class GeneratorPlugin extends JavaPlugin {
                         arenaManager.leaveArena(player);
                     }
                     case "leaderboard", "lb" -> {
-                        arenaManager.openLeaderboardGUI(player);
+                        pvpLeaderboardGUI.openLeaderboard(player, args.length >= 2 ? args[1] : "elo");
+                    }
+                    case "stats" -> {
+                        org.bukkit.entity.Player target = args.length >= 2 ? org.bukkit.Bukkit.getPlayer(args[1]) : player;
+                        if (target == null) {
+                            player.sendMessage(org.bukkit.ChatColor.RED + "Player not found!");
+                            return true;
+                        }
+                        pvpLeaderboardGUI.openStatsGUI(player, target);
+                    }
+                    case "rank" -> {
+                        PvPStatsManager.PvPStats stats = pvpStatsManager.getStats(player.getUniqueId());
+                        PvPRankManager.PvPRank rank = pvpRankManager.getRank(stats.elo);
+                        player.sendMessage(org.bukkit.ChatColor.GREEN + "=== PVP RANK ===");
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "Rank: " + rank.chatColor + rank.name);
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "ELO: " + stats.elo);
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "Progress: " + pvpRankManager.getProgressBar(stats.elo));
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "Season: " + pvpSeasonManager.getCurrentSeason().name);
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "Time Left: " + pvpSeasonManager.getTimeRemainingFormatted());
+                    }
+                    case "season" -> {
+                        PvPSeasonManager.PvPSeason season = pvpSeasonManager.getCurrentSeason();
+                        player.sendMessage(org.bukkit.ChatColor.GREEN + "=== CURRENT SEASON ===");
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "Name: " + season.name);
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "Time Left: " + pvpSeasonManager.getTimeRemainingFormatted());
+                        player.sendMessage(org.bukkit.ChatColor.YELLOW + "Rewards: First " + season.rewardCoins + " coins");
+                    }
+                    case "tournament" -> {
+                        if (args.length < 2) {
+                            pvpTournamentManager.openTournamentGUI(player);
+                            return true;
+                        }
+                        String tourneySub = args[1].toLowerCase();
+                        switch (tourneySub) {
+                            case "create" -> {
+                                if (args.length < 6) {
+                                    player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /pvp tournament create <name> <type> <maxPlayers> <entryFee> <reward>");
+                                    return true;
+                                }
+                                int maxPlayers;
+                                int entryFee;
+                                int reward;
+                                try {
+                                    maxPlayers = Integer.parseInt(args[3]);
+                                    entryFee = Integer.parseInt(args[4]);
+                                    reward = Integer.parseInt(args[5]);
+                                } catch (NumberFormatException e) {
+                                    player.sendMessage(org.bukkit.ChatColor.RED + "Invalid numbers!");
+                                    return true;
+                                }
+                                pvpTournamentManager.createTournament(args[2], "ffa", maxPlayers, entryFee, reward);
+                            }
+                            case "join" -> {
+                                if (args.length < 3) {
+                                    player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /pvp tournament join <name>");
+                                    return true;
+                                }
+                                pvpTournamentManager.joinTournament(player, args[2]);
+                            }
+                            case "leave" -> {
+                                pvpTournamentManager.leaveTournament(player);
+                            }
+                            case "start" -> {
+                                if (args.length < 3 || !sender.hasPermission("generators.admin")) {
+                                    player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /pvp tournament start <name>");
+                                    return true;
+                                }
+                                pvpTournamentManager.startTournament(args[2]);
+                            }
+                            default -> pvpTournamentManager.openTournamentGUI(player);
+                        }
                     }
                     case "list" -> {
                         player.sendMessage(org.bukkit.ChatColor.GREEN + "=== ARENAS ===");
@@ -407,7 +494,7 @@ public class GeneratorPlugin extends JavaPlugin {
                                     " §7(" + arena.type + ") §f- " + (arena.enabled ? "§aEnabled" : "§cDisabled"));
                         }
                     }
-                    default -> player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /pvp [join|leave|leaderboard|list]");
+                    default -> player.sendMessage(org.bukkit.ChatColor.RED + "Usage: /pvp [join|leave|leaderboard|stats|rank|season|tournament|list]");
                 }
             }
             return true;
@@ -415,13 +502,19 @@ public class GeneratorPlugin extends JavaPlugin {
 
         getCommand("pvp").setTabCompleter((sender, command, alias, args) -> {
             if (args.length == 1) {
-                return java.util.List.of("join", "leave", "leaderboard", "list");
+                return java.util.List.of("join", "leave", "leaderboard", "stats", "rank", "season", "tournament", "list");
             }
             if (args.length == 2 && args[0].equalsIgnoreCase("join")) {
                 return arenaManager.getArenas().stream()
                         .map(a -> a.name)
                         .filter(n -> n.toLowerCase().startsWith(args[1].toLowerCase()))
                         .toList();
+            }
+            if (args.length == 2 && args[0].equalsIgnoreCase("leaderboard")) {
+                return java.util.List.of("elo", "kills", "wins", "season");
+            }
+            if (args.length == 2 && args[0].equalsIgnoreCase("tournament")) {
+                return java.util.List.of("create", "join", "leave", "start");
             }
             return java.util.Collections.emptyList();
         });
@@ -857,6 +950,12 @@ public class GeneratorPlugin extends JavaPlugin {
             arenaManager.saveArenas();
             arenaManager.saveStats();
         }
+        if (pvpStatsManager != null) {
+            pvpStatsManager.saveStats();
+        }
+        if (pvpSeasonManager != null) {
+            pvpSeasonManager.saveSeasons();
+        }
         if (warpManager != null) {
             warpManager.saveWarps();
             warpManager.saveHomes();
@@ -966,6 +1065,26 @@ public class GeneratorPlugin extends JavaPlugin {
 
     public ArenaManager getArenaManager() {
         return arenaManager;
+    }
+
+    public PvPStatsManager getPvPStatsManager() {
+        return pvpStatsManager;
+    }
+
+    public PvPRankManager getPvPRankManager() {
+        return pvpRankManager;
+    }
+
+    public PvPSeasonManager getPvPSeasonManager() {
+        return pvpSeasonManager;
+    }
+
+    public PvPTournamentManager getPvPTournamentManager() {
+        return pvpTournamentManager;
+    }
+
+    public PvPLeaderboardGUI getPvPLeaderboardGUI() {
+        return pvpLeaderboardGUI;
     }
 
     public WarpManager getWarpManager() {
