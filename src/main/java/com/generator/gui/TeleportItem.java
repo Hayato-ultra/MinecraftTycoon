@@ -142,7 +142,7 @@ public class TeleportItem implements Listener {
             pvpSlot++;
         }
 
-        gui.setItem(16, createItem(Material.NETHER_PORTAL,
+        gui.setItem(16, createItem(Material.OBSIDIAN,
                 ChatColor.DARK_PURPLE + "Nether Hub",
                 "",
                 "§7Access nether portals",
@@ -306,7 +306,7 @@ public class TeleportItem implements Listener {
                 item.getItemMeta().getDisplayName().contains("PvP - ")) {
             String worldName = ChatColor.stripColor(item.getItemMeta().getDisplayName()).replace("PvP - ", "");
             teleportTo(player, worldName);
-        } else if (type == Material.NETHER_PORTAL) {
+        } else if (type == Material.OBSIDIAN) {
             teleportTo(player, "world_nether");
         } else if (type == Material.PLAYER_HEAD) {
             openFriendsList(player);

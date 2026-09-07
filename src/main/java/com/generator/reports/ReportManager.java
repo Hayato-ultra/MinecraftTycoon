@@ -140,7 +140,7 @@ public class ReportManager implements Listener {
                 ChatColor.RED + "Hacking/Cheating",
                 "§7Using hacks or exploits"));
 
-        gui.setItem(11, createItem(Material.FIRE,
+        gui.setItem(11, createItem(Material.FIRE_CHARGE,
                 ChatColor.RED + "Griefing",
                 "§7Destroying builds"));
 
