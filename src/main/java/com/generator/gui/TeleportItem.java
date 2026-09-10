@@ -148,7 +148,7 @@ public class TeleportItem implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         if (event.getClickedInventory() == null) return;
         if (event.getClickedInventory() != player.getInventory()) return;
-        if (event.getSlot() == SLOT && event.getRawSlot() == SLOT) {
+        if (event.getSlot() == SLOT) {
             ItemStack clicked = event.getCurrentItem();
             if (isTeleportItem(clicked)) {
                 event.setCancelled(true);
@@ -158,14 +158,9 @@ public class TeleportItem implements Listener {
 
     @EventHandler
     public void onTeleporterItemDrag(InventoryDragEvent event) {
-        if (event.getCursor() != null && isTeleportItem(event.getCursor())) {
-            event.setCancelled(true);
-            return;
-        }
-        for (int slot : event.getRawSlots()) {
-            if (slot == SLOT && event.getView().getBottomInventory() == event.getInventory()) {
+        if (event.getRawSlots().contains(SLOT) && event.getView().getBottomInventory() == event.getInventory()) {
+            if (event.getCursor() != null && isTeleportItem(event.getCursor())) {
                 event.setCancelled(true);
-                return;
             }
         }
     }
