@@ -123,16 +123,17 @@ public class TeleportItem implements Listener {
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
+        Action action = event.getAction();
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
         ItemStack item = player.getInventory().getItemInMainHand();
         if (!isTeleportItem(item)) return;
 
-        event.setCancelled(true);
+        org.bukkit.entity.Entity target = player.getTargetEntity(5);
+        if (target != null) return;
 
-        Action action = event.getAction();
-        if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
-            openTeleportMenu(player);
-        }
+        event.setCancelled(true);
+        openTeleportMenu(player);
     }
 
     @EventHandler
