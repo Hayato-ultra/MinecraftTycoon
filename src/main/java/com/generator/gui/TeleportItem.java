@@ -48,7 +48,7 @@ public class TeleportItem implements Listener {
     }
 
     private ItemStack createTeleportItem() {
-        ItemStack item = new ItemStack(Material.COMPASS);
+        ItemStack item = new ItemStack(Material.NETHER_STAR);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(ITEM_NAME);
@@ -68,7 +68,7 @@ public class TeleportItem implements Listener {
     }
 
     private boolean isTeleportItem(ItemStack item) {
-        if (item == null || item.getType() != Material.COMPASS) return false;
+        if (item == null || item.getType() != Material.NETHER_STAR) return false;
         ItemMeta meta = item.getItemMeta();
         if (meta == null || meta.getLore() == null) return false;
         return meta.getLore().contains(LORE_KEY);
