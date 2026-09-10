@@ -252,9 +252,7 @@ public class GeneratorListener implements Listener {
     public void onCreatureSpawn(CreatureSpawnEvent event) {
         if (event.getLocation().getWorld() != null &&
                 event.getLocation().getWorld().getName().equals("lobby")) {
-            if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.CUSTOM) {
-                event.setCancelled(true);
-            }
+            event.setCancelled(true);
         }
     }
 }
