@@ -167,7 +167,7 @@ public class MenuManager implements Listener {
 
         // Game Modes
         if (type == Material.GRASS_BLOCK) {
-            teleportToWorld(player, "bskyblock_world");
+            teleportToWorld(player, "lobby");
             return;
         }
         if (type == Material.GRAVEL) {
@@ -239,7 +239,7 @@ public class MenuManager implements Listener {
         Material type = item.getType();
 
         if (type == Material.GRASS_BLOCK) {
-            teleportToWorld(player, "bskyblock_world");
+            teleportToWorld(player, "lobby");
             return;
         }
         if (type == Material.GRAVEL) {

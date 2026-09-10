@@ -524,7 +524,7 @@ public class TeleportItem implements Listener {
         Material type = item.getType();
 
         if (type == Material.BEACON) {
-            teleportTo(player, "bskyblock_world");
+            teleportTo(player, "lobby");
         } else if (type == Material.RED_BED) {
             player.closeInventory();
             player.performCommand("home");
